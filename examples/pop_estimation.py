@@ -95,11 +95,13 @@ def Main():
 	# Parameters and sample generation
 	popn_size = 1e4
 	capture_rounds = 10
-	capture_prob = 0.05
 	
-	capture_probs = np.power(2.0, np.arange(-20, 1, 1))
+	# Make repeatable
+	np.random.seed(12345)
+
+	capture_probs = np.arange(0.0001, 0.05, 0.0001)
 	estimated_popn_sizes = np.zeros(capture_probs.size)
-	
+
 	for i, capture_prob in enumerate(capture_probs):
 		capture_histories = GenCaptureHistories(
 			popn_size, capture_rounds, capture_prob)
@@ -110,16 +112,24 @@ def Main():
 		estimated_popn_size = EstimatePopnSize(
 			obs_history_freq, n_caught, capture_rounds)
 		estimated_popn_sizes[i] = estimated_popn_size
-	
-	error = np.abs(estimated_popn_sizes - popn_size)
-	print capture_probs
-	print error
-	
+
+	actual_popn_sizes = np.ones(capture_probs.size) * popn_size
+	error_in_estimate = np.abs(estimated_popn_sizes - actual_popn_sizes)
+	rel_error = error_in_estimate / float(popn_size)
+
 	pylab.figure()
-	pylab.xlabel('Capture Probability')
-	pylab.ylabel('Error in Size Estimate')
-	pylab.loglog(capture_probs, error, 'r.')
-	pylab.ylim((1e-3, np.max(error) * 10))
+	pylab.xlabel('Red Panda Capture Probability')
+	pylab.ylabel('Red Panda Population Size Estimate (10 rounds)')
+	pylab.loglog(capture_probs, estimated_popn_sizes, 'r.')
+	pylab.loglog(capture_probs, actual_popn_sizes, 'b-')
+
+	pylab.figure()
+	pylab.loglog(capture_probs, rel_error, 'g.', label='Relative error')
+	pylab.loglog(capture_probs, 0.1*np.ones(capture_probs.size), 'b-', label='10%% error')
+	pylab.xlabel('Red Panda Capture Probability')
+	pylab.ylabel('Relative Error in Population Size Estimate')
+	pylab.legend()
+
 	pylab.show()
 	
 	
