@@ -129,7 +129,6 @@ def Main():
 	pylab.xlabel('Red Panda Capture Probability')
 	pylab.ylabel('Relative Error in Population Size Estimate')
 	pylab.legend()
-
 	pylab.show()
 	
 	
