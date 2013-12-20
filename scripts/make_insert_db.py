@@ -35,22 +35,7 @@ def Main():
 	insert_3p.id += '_3p'
 
 	SeqIO.write([insert_5p, insert_3p], args.out_filename, 'fasta')
-	
-"""
-dana_gfp_5p = dana_gfp[:20]
-dana_gfp_5p.name = 'pETM-CHis-MBP-cpEGFP_insert_5p_end (30bp)'
-dana_gfp_5p.description = 'pETM-CHis-MBP-cpEGFP_insert_5p_end (30bp)'
-dana_gfp_5p.id = 'pETM-CHis-MBP-cpEGFP_insert_5p_end (30bp)'
 
-dana_gfp_3p = dana_gfp[-20:]
-dana_gfp_3p.name = 'pETM-CHis-MBP-cpEGFP_insert_3p_end (30bp)'
-dana_gfp_3p.description = 'pETM-CHis-MBP-cpEGFP_insert_3p_end (30bp)'
-dana_gfp_3p.id = 'pETM-CHis-MBP-cpEGFP_insert_3p_end (30bp)'
-
-dana_gfp_5p_fname = '_tmp_seq/dana_gfp_5p.fa'
-dana_gfp_3p_fname = '_tmp_seq/dana_gfp_3p.fa'
-gfp_ends_fname = '_tmp_seq/cpGFP_both_ends.fa'
-"""
 
 if __name__ == '__main__':
 	Main()
