@@ -21,7 +21,7 @@ def Main():
       					help="Path to FASTA file containing insert sequence.")
 	parser.add_argument("out_filename",
 					    help="Output filename.")
-	parser.add_argument("-l", "--end_length", default=30, type=int,
+	parser.add_argument("-l", "--end_length", default=20, type=int,
 					    help="The number of 3' and 5' bases to store.")
 	args = parser.parse_args()
 
