@@ -4,9 +4,20 @@
 
 Aligns reads to reference sequences (e.g. insert) and then produces a FASTA file
 with only those reads that match.
+
+Requirements:
+1) FASTX toolkit installed (for fastq_to_fasta).
+	http://hannonlab.cshl.edu/fastx_toolkit/download.html
+2) BLAT installed (for blat).
+	http://genome.ucsc.edu/FAQ/FAQblat.html
+3) Recent BioPython install with SearchIO for BLAT IO (1.61 or higher).
+	http://biopython.org/wiki/SearchIO
+4) NumPy installed.
 """
 
 import argparse
+import itertools
+import glob
 import numpy as np
 import os
 import subprocess
@@ -99,21 +110,28 @@ def Main():
 	parser = argparse.ArgumentParser(description='Filter reads.')
 	parser.add_argument("database_filename",
       					help="Path to FASTA file containing DB to align reads to.")
-	parser.add_argument("read_filenames", nargs='+', help="Path to FASTQ file containing reads.")
+	parser.add_argument("-r", "--read_filenames", nargs='+', help="Path to FASTQ file containing reads.")
 	parser.add_argument("-t", "--tmp_dir",
-					    help="Path to use to store intermediate files.",
-						default="_read_filter_data")
+						default="_read_filter_data",
+					    help="Path to use to store intermediate files.")
 	parser.add_argument("--blat_tile_size", type=int, default=10,
 						help="Tile size to use for BLAT search.")
-	parser.add_argument("--blat_step_size", type=int, default=4,
+	parser.add_argument("--blat_step_size", type=int, default=3,
 						help="Step size to use for BLAT search.")
-	parser.add_argument("--blat_min_score", type=int, default=8,
+	parser.add_argument("--blat_min_score", type=int, default=10,
 						help="Minimum score to retain a BLAT match.")
 	args = parser.parse_args()
 
 	# Check that everything we need exists.
 	map(CheckInstalled, ['fastq_to_fasta', 'blat'])
-	CheckAllExist(args.read_filenames)	
+
+	read_filenames = map(glob.glob, args.read_filenames)
+	read_filenames = list(itertools.chain(*read_filenames))
+	read_filenames = filter(lambda n: n.endswith('fq') or n.endswith('fastq'),
+							read_filenames)
+	print 'Read filenames:', read_filenames
+	assert len(read_filenames) > 0, 'Must provide reads!'
+	CheckAllExist(read_filenames)
 
 	# Make the temporary directory if needed.
 	if not path.exists(args.tmp_dir):
@@ -123,7 +141,7 @@ def Main():
 	start_ts = time.time()
 
 	fasta_fnames = []
-	for fname in args.read_filenames:
+	for fname in read_filenames:
 		out_fname = MakeFASTAFilename(fname, args.tmp_dir)
 		fasta_fnames.append(out_fname)
 		if path.exists(out_fname):
@@ -201,5 +219,3 @@ def Main():
 
 if __name__ == '__main__':
 	Main()
-	
-
