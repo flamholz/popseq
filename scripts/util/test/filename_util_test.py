@@ -57,3 +57,7 @@ class FilenameUtilTests(unittest.TestCase):
 				input_fname, out_ext, dest_dir=dest_dir,
 				postfix=postfix)
 			self.assertEquals(expected_out, out_fname)
+
+
+if __name__ == '__main__':
+	unittest.main()
