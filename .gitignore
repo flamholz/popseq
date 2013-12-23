@@ -37,3 +37,7 @@ nosetests.xml
 
 # Sequence data.
 *.fa
+
+# VIM
+*.swo
+*.swp
