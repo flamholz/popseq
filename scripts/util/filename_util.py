@@ -19,35 +19,51 @@ def CheckAllExist(paths):
 		assert path.exists(fname), '%s does not exist!' % fname
 
 
-def MakeFASTAFilename(fastq_path, dest_dir):
-	"""Makes a FASTA filename for the given FASTQ file.
+def _MakeFname(in_fname, out_ext,
+			   dest_dir=None,
+			   postfix=None):
+	"""Helper to make a new filename from an existing one.
 
 	Args:
-		fastq_path: path to the FASTQ file.
-		dest_dir: where you want to save the FASTA file.
-	
+		in_fname: the existing filename.
+		out_ext: the extension of the ouptut filename.
+		dest_dir: directory to put the output filename into.
+		postfix: a string to append to the filename.
+
 	Returns:
-		The FASTA filename.
+		New filename for output.
 	"""
-	head, tail = path.split(fastq_path)
+	head, tail = path.split(in_fname)
 	name, ext = path.splitext(tail)
-	return path.join(dest_dir, '%s.fa' % name)
+	fname = '%s.%s' % (name, out_ext)
+	if postfix:
+		fname = '%s_%s.%s' % (name, postfix, out_ext)
+	if dest_dir:
+		return path.join(dest_dir, fname)
+	return fname
 
 
-def MakeFilteredFASTAFilename(fasta_path):
-	"""Makes a filename for a filtered version of the given file.
+def MakeFASTAFilename(in_fname,
+					  dest_dir=None,
+					  postfix=None):
+	"""Makes a FASTA filename for the given input file.
 
 	Args:
-		fasta_path: path to the FASTA file.
+		in_fname: path to the existing file.
+		dest_dir: where you want to save the FASTA file.
+		postfix: a string to append to the filename (before extension).
 	
 	Returns:
 		The FASTA filename.
 	"""
-	name, ext = path.splitext(fasta_path)
-	return '%s_filtered.fa' % name
+	return _MakeFname(in_fname, out_ext='.fa',
+					  dest_dir=dest_dir,
+					  postfix=postfix)
 
 
-def MakePSLFilename(fasta_path, dest_dir):
+def MakePSLFilename(fasta_path,
+					dest_dir=None,
+					postfix=None):
 	"""Makes a BLAT PSL filename for the given FASTA file.
 
 	Args:
@@ -57,8 +73,7 @@ def MakePSLFilename(fasta_path, dest_dir):
 	Returns:
 		The PSL filename.
 	"""
-	head, tail = path.split(fasta_path)
-	name, ext = path.splitext(tail)
-	return path.join(dest_dir, '%s_aligned.psl' % name)
-
+	return _MakeFname(fasta_path, out_ext='.psl',
+					  dest_dir=dest_dir,
+					  postfix=postfix)
 
