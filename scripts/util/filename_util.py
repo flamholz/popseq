@@ -56,7 +56,7 @@ def MakeFASTAFilename(in_fname,
 	Returns:
 		The FASTA filename.
 	"""
-	return _MakeFname(in_fname, out_ext='.fa',
+	return _MakeFname(in_fname, out_ext='fa',
 					  dest_dir=dest_dir,
 					  postfix=postfix)
 
@@ -73,7 +73,7 @@ def MakePSLFilename(fasta_path,
 	Returns:
 		The PSL filename.
 	"""
-	return _MakeFname(fasta_path, out_ext='.psl',
+	return _MakeFname(fasta_path, out_ext='psl',
 					  dest_dir=dest_dir,
 					  postfix=postfix)
 
