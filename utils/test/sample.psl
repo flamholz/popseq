@@ -1,0 +1,10 @@
+psLayout version 3
+
+match	mis- 	rep. 	N's	Q gap	Q gap	T gap	T gap	strand	Q        	Q   	Q    	Q  	T        	T   	T    	T  	block	blockSizes 	qStarts	 tStarts
+     	match	match	   	count	bases	count	bases	      	name     	size	start	end	name     	size	start	end	count
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+20	0	0	0	0	0	0	0	-	M01065:117:000000000-A5AGY:1:1101:15881:1665	150	109	129	pETM-CHis-MBP-cpEGFP_theoretical_insert_5p	20	0	20	1	20,	21,	0,
+20	0	0	0	0	0	0	0	+	M01065:117:000000000-A5AGY:1:1101:14827:1690	149	98	118	pETM-CHis-MBP-cpEGFP_theoretical_insert_3p	20	0	20	1	20,	98,	0,
+20	0	0	0	0	0	0	0	-	M01065:117:000000000-A5AGY:1:1101:18320:1704	149	23	43	pETM-CHis-MBP-cpEGFP_theoretical_insert_3p	20	0	20	1	20,	106,	0,
+17	0	0	0	0	0	0	0	-	M01065:117:000000000-A5AGY:1:1101:17009:1716	149	132	149	pETM-CHis-MBP-cpEGFP_theoretical_insert_3p	20	3	20	1	17,	0,	3,
+20	0	0	0	0	0	0	0	+	M01065:117:000000000-A5AGY:1:1101:18439:1792	150	19	39	pETM-CHis-MBP-cpEGFP_theoretical_insert_5p	20	0	20	1	20,	19,	0,
