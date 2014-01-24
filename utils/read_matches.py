@@ -99,7 +99,12 @@ class ReadMatches(object):
         self.backbone_location_in_query = query_position
 
         corrected_hstart = match.hit_start + 1
-        hit_position = corrected_hstart if insert_end == '3p' else match.hit_end
+        if insert_end == '5p':
+            hit_position = match.hit_end - 5
+        else:
+            # One of the ends needs to be shifted by 5 to account
+            # for the transposons copying of 5bp.
+            hit_position = corrected_hstart
         self.match_location_in_backbone = hit_position
 
     backbone_match = property(get_backbone_match, set_backbone_match)
