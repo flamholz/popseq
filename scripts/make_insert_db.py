@@ -6,12 +6,7 @@ This file contains the 3' and 5' ends of the insert.
 """
 
 import argparse
-import numpy as np
-import os
-import subprocess
-import time
 
-from os import path
 from Bio import SeqIO
 
 

@@ -63,7 +63,8 @@ def MakeFASTAFilename(in_fname,
 
 def MakePSLFilename(fasta_path,
 					dest_dir=None,
-					postfix=None):
+					postfix=None,
+                    out_ext='psl'):
 	"""Makes a BLAT PSL filename for the given FASTA file.
 
 	Args:
@@ -73,7 +74,7 @@ def MakePSLFilename(fasta_path,
 	Returns:
 		The PSL filename.
 	"""
-	return _MakeFname(fasta_path, out_ext='psl',
+	return _MakeFname(fasta_path, out_ext=out_ext,
 					  dest_dir=dest_dir,
 					  postfix=postfix)
 
