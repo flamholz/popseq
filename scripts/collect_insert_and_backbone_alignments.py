@@ -1,21 +1,35 @@
 # -*- coding: utf-8 -*-
 # <nbformat>2</nbformat>
 
+import argparse
 import glob
 import numpy as np
 
 from sequtils.read_alignment_data import ReadAlignmentData
 
-insert_aligned_fnames = glob.glob('_read_filter_data/DFS001_3_index7_CAGATC_L004_R1_*_insert_aligned.pslx')
-backbone_aligned_fnames = glob.glob('_read_filter_data/DFS001_3_index7_CAGATC_L004_R1_*_backbone_aligned.pslx')
-fasta_fnames = glob.glob('_read_filter_data/DFS001_3_index7_CAGATC_L004_R1_*.fa')
+
+parser = argparse.ArgumentParser(description='Filter reads.')
+parser.add_argument("-i", "--insert_alignments", required=True,
+                    help=("Path to pslx files containing alignments to backbone"))
+parser.add_argument("-b", "--backbone_alignments", required=True,
+                    help=("Path to pslx files containing alignments to insert"))
+parser.add_argument("-r", "--read_filenames", nargs='+', required=True,
+                    help="Path to FASTA files containing reads.")
+parser.add_argument("-o", "--output_csv_filename", nargs='+', required=True,
+                    help="Where to write CSV output to.")
+args = parser.parse_args()
+
+insert_aligned_fnames = glob.glob(args.insert_alignments)
+backbone_aligned_fnames = glob.glob(args.backbone_alignments)
+fasta_fnames = glob.glob(args.read_filenames)
 
 """
-insert_aligned_fnames = glob.glob('sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped_insert_aligned.pslx')
-backbone_aligned_fnames = glob.glob('sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped_backbone_aligned.pslx')
-fasta_fnames = glob.glob('sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped.fa')
+insert_aligned_fnames = glob.glob('sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_insert_aligned.pslx')
+backbone_aligned_fnames = glob.glob('sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_backbone_aligned.pslx')
+fasta_fnames = glob.glob('sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k.fa')
 """
 
+# Make sure all the filenames are in the same order so we can zip them.
 insert_aligned_fnames = sorted(insert_aligned_fnames)
 backbone_aligned_fnames = sorted(backbone_aligned_fnames)
 fasta_fnames = sorted(fasta_fnames)
@@ -55,17 +69,34 @@ print 'Reads with consistent matches to backbone and insert', n_consistent
 positions = []
 positions_3p = []
 positions_5p = []
+linker_lengths = []
 for r in read_data_by_id.itervalues():
     # NOTE: reverse insertions are when the insert and backbone matches are on opposite
     # strands of the read. We may want to quantify these later, but we are ignoring them
     # for now.
-    if r.ConsistentInsertAndBackboneMatches():
+    r.CalculateInsertion()
+    if r.has_insertion:
         ip = r.insertion_site
         if ip < 0:
-            print 'negative insertion site'
+            print
+            print 'negative insertion site', ip
+            print r.insert_hsp
+            print r.backbone_hsp
+            r.PrettyPrint()
+        elif ip > 4107:
+            print 
+            print 'insertion past stop codon', ip
+            print r.insert_hsp
+            print r.backbone_hsp
+            r.PrettyPrint()
+        d = r.BackboneInsertDistanceInRead()
+        if d > 15:
+            print 'long distance between insert & backbone:', d
+            print 'insert position', ip
             print r.insert_hsp
             print r.backbone_hsp
         positions.append(ip)
+        linker_lengths.append(r.linker_length)
         if r._insert_match_end == '3p':
             positions_3p.append(ip)
         else:
@@ -73,15 +104,15 @@ for r in read_data_by_id.itervalues():
 
 import csv
 
-output_fname = 'all_insertions_sample_3.csv'
-print 'Writing insertion matches to', output_fname
-with open(output_fname, 'w') as f:
+print 'Writing insertion matches to', args.output_csv_filename
+with open(args.output_csv_filename, 'w') as f:
     w = csv.DictWriter(f, ReadAlignmentData.DICT_FIELDNAMES)
     w.writeheader()
     for rd in read_data_by_id.itervalues():
         if rd.has_insertion:
             w.writerow(rd.AsDict())
 
+"""
 import pylab
 pylab.figure()
 pylab.hist(positions_3p, bins=50, color='b', label='3p insertions')
@@ -100,10 +131,9 @@ pylab.savefig('insert_dist_sample_3.png')
 pylab.savefig('insert_dist_sample_3.svg')
 
 pylab.figure()
-finite_idx = np.isfinite(distances)
-pylab.hist(distances[finite_idx], bins=50)
-pylab.xlabel('Insert - Backbone Distance (nt)')
-pylab.savefig('insert_backbone_distance_sample_3.png')
-pylab.savefig('insert_backbone_distance_sample_3.svg')
+pylab.hist(linker_lengths)
+pylab.xlabel('Linker Length')
+pylab.savefig('linker_length_sample_3.png')
+pylab.savefig('linker_length_sample_3.svg')
 pylab.show()
-
+"""
