@@ -7,17 +7,18 @@ with only those reads that match.
 
 Requirements:
 1) FASTX toolkit installed (for fastq_to_fasta).
-	http://hannonlab.cshl.edu/fastx_toolkit/download.html
+    http://hannonlab.cshl.edu/fastx_toolkit/download.html
 2) BLAT installed (for blat).
-	http://genome.ucsc.edu/FAQ/FAQblat.html
+    http://genome.ucsc.edu/FAQ/FAQblat.html
 3) Recent BioPython install with SearchIO for BLAT IO (1.61 or higher).
-	http://biopython.org/wiki/SearchIO
+    http://biopython.org/wiki/SearchIO
 4) NumPy installed.
 """
 
 import argparse
 import os
 import time
+import numpy as np
 
 from os import path
 from scripts.util import filename_util
@@ -38,11 +39,11 @@ def Main():
     parser.add_argument("-t", "--tmp_dir",
                         default="_read_filter_data",
                         help="Path to use to store intermediate files.")
-    parser.add_argument("--blat_tile_size", type=int, default=10,
+    parser.add_argument("--blat_tile_size", type=int, default=6,
                         help="Tile size to use for BLAT search.")
-    parser.add_argument("--blat_step_size", type=int, default=3,
+    parser.add_argument("--blat_step_size", type=int, default=2,
                         help="Step size to use for BLAT search.")
-    parser.add_argument("--blat_min_score", type=int, default=10,
+    parser.add_argument("--blat_min_score", type=int, default=15,
                         help="Minimum score to retain a BLAT match.")
     parser.add_argument("--blat_output_type", default="pslx",
                         help="Blat output format")
@@ -54,7 +55,7 @@ def Main():
     # Get the filenames we are supposed to process.
     read_filenames = filename_util.ForceExpand(args.read_filenames)
     print 'Read filenames', read_filenames
-    read_filenames = filter(lambda n: n.endswith('fq') or n.endswith('fastq'),
+    read_filenames = filter(lambda n: path.splitext(n)[1] in ['.fq', '.fastq', '.fa', '.fasta'],
                             read_filenames)
     print 'Read filenames:', ','.join(read_filenames)
     assert len(read_filenames) > 0, 'Must provide reads!'
@@ -68,11 +69,15 @@ def Main():
     # Convert the FASTQ input files to FASTA as BLAT doesn't seem
     # to take FASTQ input. NOTE: seems to ditch sequences containing uncalled bases
     # reported as "N" in this conversion. Revisit in future.
-    print 'Converting FASTQ to FASTA'
+    all_fa = np.all(map(lambda fname:fname.endswith('.fa'), read_filenames))
     start_ts = time.time()
-    fasta_fnames = ConvertFASTQToFASTA(read_filenames, args.tmp_dir)
-    duration = time.time() - start_ts
-    print 'Finished converting to FASTA, took %.3f seconds' % duration
+    if not all_fa:
+        print 'Converting FASTQ to FASTA'
+        fasta_fnames = ConvertFASTQToFASTA(read_filenames, args.tmp_dir)
+        duration = time.time() - start_ts
+        print 'Finished converting to FASTA, took %.3f seconds' % duration
+    else:
+        fasta_fnames = read_filenames
 
     # Align the reads in FASTA format to the insert.
     print 'Aligning reads to insert database at %s' % args.insert_db_filename
