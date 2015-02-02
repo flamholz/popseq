@@ -212,17 +212,6 @@ class ReadAlignmentData(object):
     def HasBothHSPs(self):
         return self.HasBackboneHSP() and self.HasInsertHSP()
 
-    def BackboneInsertMatchesOverlap(self):
-        """Test the case that they overlap at exactly one bp.
-
-        NOTE: this code appears to be wrong....
-        """
-        b_hsp = self._backbone_hsp
-        i_hsp = self._insert_hsp
-        diff_start_end = i_hsp.query_start - b_hsp.query_end
-        diff_end_start = i_hsp.query_end - b_hsp.query_start
-        return np.sign(diff_start_end) == np.sign(diff_end_start)
-
     def ConsistentInsertAndBackboneMatches(self):
         return (self.HasBothHSPs() and
                 self._backbone_hsp.query_id == self._insert_hsp.query_id and 
@@ -230,19 +219,6 @@ class ReadAlignmentData(object):
                 self._n_backbone_match_fragments == 1 and
                 self._insert_match_strand == self._backbone_match_strand)
         
-    def BackboneFirstInReadCoords(self):
-        """Returns True if the backbone matched before the insert in 5' to 3' direction of the read."""
-        return self._backbone_hsp.query_start < self._insert_hsp.query_start
-
-    def BackboneInsertDistanceInRead(self):
-        if not self.ConsistentInsertAndBackboneMatches():
-            return np.NaN
-        b_hsp = self._backbone_hsp
-        i_hsp = self._insert_hsp
-        if self.BackboneFirstInReadCoords():
-            return i_hsp.query_start - b_hsp.query_end
-        return b_hsp.query_start - i_hsp.query_end
-
     def CalculateInsertion(self):
         self._has_insertion = self.ConsistentInsertAndBackboneMatches()
         if not self._has_insertion:
