@@ -65,7 +65,6 @@ for insert_fname, backbone_fname, fasta_fname in zip(insert_aligned_fnames,
                                                            fasta_fname))
 
 consistent = [r.has_insertion for r in read_data_by_id.itervalues()]
-distances = np.array([r.BackboneInsertDistanceInRead() for r in read_data_by_id.itervalues()])
 
 n_total_w_matches = len(read_data_by_id) 
 n_consistent = np.sum(consistent)
@@ -80,5 +79,7 @@ with open(args.output_csv_filename, 'w') as f:
     w = csv.DictWriter(f, ReadAlignmentData.DICT_FIELDNAMES)
     w.writeheader()
     for rd in read_data_by_id.itervalues():
-        if rd.has_insertion:
+        # Requires both matches they may not be forward or consistent.
+        if rd.has_insert_backbone_matches:
             w.writerow(rd.AsDict())
+
