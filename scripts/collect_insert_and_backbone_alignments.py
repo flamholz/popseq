@@ -4,6 +4,7 @@
 import argparse
 import numpy as np
 
+from scripts.util import filename_util
 from sequtils.read_alignment_data import ReadAlignmentData
 
 
@@ -21,6 +22,10 @@ args = parser.parse_args()
 insert_aligned_fnames = args.insert_alignments
 backbone_aligned_fnames = args.backbone_alignments
 fasta_fnames = args.read_filenames
+
+insert_aligned_fnames = filename_util.ForceExpand(insert_aligned_fnames)
+backbone_aligned_fnames = filename_util.ForceExpand(backbone_aligned_fnames)
+fasta_fnames = filename_util.ForceExpand(fasta_fnames)
 
 """
 # For testing the script with less data
@@ -60,7 +65,6 @@ for insert_fname, backbone_fname, fasta_fname in zip(insert_aligned_fnames,
                                                            fasta_fname))
 
 consistent = [r.has_insertion for r in read_data_by_id.itervalues()]
-distances = np.array([r.BackboneInsertDistanceInRead() for r in read_data_by_id.itervalues()])
 
 n_total_w_matches = len(read_data_by_id) 
 n_consistent = np.sum(consistent)
@@ -75,67 +79,7 @@ with open(args.output_csv_filename, 'w') as f:
     w = csv.DictWriter(f, ReadAlignmentData.DICT_FIELDNAMES)
     w.writeheader()
     for rd in read_data_by_id.itervalues():
-        if rd.has_insertion:
+        # Requires both matches they may not be forward or consistent.
+        if rd.has_insert_backbone_matches:
             w.writerow(rd.AsDict())
 
-"""
-positions = []
-positions_3p = []
-positions_5p = []
-linker_lengths = []
-for r in read_data_by_id.itervalues():
-    # NOTE: reverse insertions are when the insert and backbone matches are on opposite
-    # strands of the read. We may want to quantify these later, but we are ignoring them
-    # for now.
-    r.CalculateInsertion()
-    if r.has_insertion:
-        ip = r.insertion_site
-        if ip < 0:
-            print
-            print 'negative insertion site', ip
-            print r.insert_hsp
-            print r.backbone_hsp
-            r.PrettyPrint()
-        elif ip > 4107:
-            print 
-            print 'insertion past stop codon', ip
-            print r.insert_hsp
-            print r.backbone_hsp
-            r.PrettyPrint()
-        d = r.BackboneInsertDistanceInRead()
-        if d > 15:
-            print 'long distance between insert & backbone:', d
-            print 'insert position', ip
-            print r.insert_hsp
-            print r.backbone_hsp
-        positions.append(ip)
-        linker_lengths.append(r.linker_length)
-        if r._insert_match_end == '3p':
-            positions_3p.append(ip)
-        else:
-            positions_5p.append(ip)
-
-import pylab
-pylab.figure()
-pylab.hist(positions_3p, bins=50, color='b', label='3p insertions')
-pylab.hist(positions_5p, bins=50, color='g', label='5p insertions')
-pylab.xlabel('Insertion Site (nt)')
-pylab.xlim((-30, 4140))
-pylab.legend()
-pylab.savefig('3p_5p_insert_dist_sample_3.png')
-pylab.savefig('3p_5p_insert_dist_sample_3.svg')
-
-pylab.figure()
-pylab.hist(positions, bins=50, color='b')
-pylab.xlabel('Insertion Site (nt)')
-pylab.xlim((-30, 4140))
-pylab.savefig('insert_dist_sample_3.png')
-pylab.savefig('insert_dist_sample_3.svg')
-
-pylab.figure()
-pylab.hist(linker_lengths)
-pylab.xlabel('Linker Length')
-pylab.savefig('linker_length_sample_3.png')
-pylab.savefig('linker_length_sample_3.svg')
-pylab.show()
-"""

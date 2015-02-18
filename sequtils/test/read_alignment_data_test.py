@@ -157,9 +157,82 @@ class ReadAligmentDataTest(unittest.TestCase):
             insert_sites = np.array(insert_sites)
             self.assertTrue(np.all(insert_sites[0] == insert_sites)) 
         
-    """
+    def testReverseInsertion5pInsertPlusBackboneMinus(self):
+        print "testReverseInsertion5pInsertPlusBackboneMinus"
+        ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:15409:7214"
+
+        rd = self.READ_DATA[ex_key]
+        rd.PrettyPrint()
+        
+        self.assertTrue(rd.has_insertion)
+        self.assertFalse(rd.has_forward_insertion)
+        self.assertEquals('5p', rd.insert_match_end)
+        self.assertEquals(1, rd.insert_match_strand)
+        self.assertEquals(-1, rd.backbone_match_strand)
+        self.assertEquals(3477, rd.insertion_site)
+        self.assertFalse(rd.insertion_in_frame)
+        self.assertEquals(6, rd.linker_length)
+        self.assertEquals('GCTGCT', rd.linker_seq.tostring())
+
+    def testReverseInsertion3pInsertPlusBackboneMinus(self):
+        print "testReverseInsertion3pInsertPlusBackboneMinus"
+        ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:7921:3089"
+
+        rd = self.READ_DATA[ex_key]
+        rd.PrettyPrint()
+        
+        self.assertTrue(rd.has_insertion)
+        self.assertFalse(rd.has_forward_insertion)
+        self.assertEquals('3p', rd.insert_match_end)
+        self.assertEquals(1, rd.insert_match_strand)
+        self.assertEquals(-1, rd.backbone_match_strand)
+        self.assertEquals(1962, rd.insertion_site)
+        self.assertFalse(rd.insertion_in_frame)
+        self.assertEquals(6, rd.linker_length) 
+        self.assertEquals('TCTCCT', rd.linker_seq.tostring())
+
+    def testReverseInsertion3pInsertMinusBackbonePlus(self):
+        print "testReverseInsertion3pInsertMinusBackbonePlus"
+        ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:1835:4416"
+
+        rd = self.READ_DATA[ex_key]
+        rd.PrettyPrint()
+        
+        self.assertTrue(rd.has_insertion)
+        self.assertFalse(rd.has_forward_insertion)
+        self.assertEquals('3p', rd.insert_match_end)
+        self.assertEquals(-1, rd.insert_match_strand)
+        self.assertEquals(1, rd.backbone_match_strand)
+        self.assertEquals(300, rd.insertion_site)
+        self.assertFalse(rd.insertion_in_frame)
+        self.assertEquals(6, rd.linker_length)
+        self.assertEquals('CCTCCT', rd.linker_seq.tostring())
+
+    def testReverseInsertion5pInsertMinusBackbonePlus(self):
+        print "testReverseInsertion5pInsertMinusBackbonePlus"
+        ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:15525:6413"
+
+        rd = self.READ_DATA[ex_key]
+        rd.PrettyPrint()
+        
+        self.assertTrue(rd.has_insertion)
+        self.assertFalse(rd.has_forward_insertion)
+        self.assertEquals('5p', rd.insert_match_end)
+        self.assertEquals(-1, rd.insert_match_strand)
+        self.assertEquals(1, rd.backbone_match_strand)
+        self.assertEquals(3224, rd.insertion_site)
+        self.assertFalse(rd.insertion_in_frame)
+        self.assertEquals(6, rd.linker_length)
+        self.assertEquals('GCTGCT', rd.linker_seq.tostring())
+
+"""
     def testRunAll(self):
         for key, read_data in self.READ_DATA.iteritems():
             if read_data.has_insertion:
                 read_data.insertion_site
-    """ 
+                if not read_data.has_forward_insertion:
+                    print 
+                    print key
+                    read_data.PrettyPrint()
+                    print
+"""

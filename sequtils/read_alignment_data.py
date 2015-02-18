@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # <nbformat>2</nbformat>
 
-import numpy as np
-
 from Bio import SearchIO
 from Bio import Seq
 from Bio import SeqIO
@@ -36,7 +34,9 @@ class ReadAlignmentData(object):
         
         # If set, this is the position of the insertion.
         # The read may have no insertion in it.
+        self._has_insert_backbone_matches = None
         self._has_insertion = None
+        self._has_forward_insertion = None
         self._insertion_site = None
         self._insertion_in_frame = None
         self._linker_length = None
@@ -212,17 +212,6 @@ class ReadAlignmentData(object):
     def HasBothHSPs(self):
         return self.HasBackboneHSP() and self.HasInsertHSP()
 
-    def BackboneInsertMatchesOverlap(self):
-        """Test the case that they overlap at exactly one bp.
-
-        NOTE: this code appears to be wrong....
-        """
-        b_hsp = self._backbone_hsp
-        i_hsp = self._insert_hsp
-        diff_start_end = i_hsp.query_start - b_hsp.query_end
-        diff_end_start = i_hsp.query_end - b_hsp.query_start
-        return np.sign(diff_start_end) == np.sign(diff_end_start)
-
     def ConsistentInsertAndBackboneMatches(self):
         return (self.HasBothHSPs() and
                 self._backbone_hsp.query_id == self._insert_hsp.query_id and 
@@ -230,21 +219,10 @@ class ReadAlignmentData(object):
                 self._n_backbone_match_fragments == 1 and
                 self._insert_match_strand == self._backbone_match_strand)
         
-    def BackboneFirstInReadCoords(self):
-        """Returns True if the backbone matched before the insert in 5' to 3' direction of the read."""
-        return self._backbone_hsp.query_start < self._insert_hsp.query_start
-
-    def BackboneInsertDistanceInRead(self):
-        if not self.ConsistentInsertAndBackboneMatches():
-            return np.NaN
-        b_hsp = self._backbone_hsp
-        i_hsp = self._insert_hsp
-        if self.BackboneFirstInReadCoords():
-            return i_hsp.query_start - b_hsp.query_end
-        return b_hsp.query_start - i_hsp.query_end
-
     def CalculateInsertion(self):
-        self._has_insertion = self.ConsistentInsertAndBackboneMatches()
+        self._has_insert_backbone_matches = self.HasBothHSPs()
+        self._has_insertion = self.HasBothHSPs()
+        self._has_forward_insertion = self.ConsistentInsertAndBackboneMatches()
         if not self._has_insertion:
             self._has_fixed = False
             return
@@ -274,6 +252,7 @@ class ReadAlignmentData(object):
         self._has_fixed = (fixed_pos != -1)
         if not self._has_fixed:
             self._has_insertion = False
+            self._has_forward_insertion = False
             return
         
         self._fixed_start = fixed_pos
@@ -285,39 +264,44 @@ class ReadAlignmentData(object):
         insert_position = None
         linker_length = None
         linker_seq = None
+        same_strand = self._insert_match_strand == self._backbone_match_strand
         if self._insert_match_end == '5p':
             if self._insert_match_strand > 0:
-                # + strand of read, matched 5' end of insert.
-                bb_match_end = b_hsp.hit_end
+                # + strand of read for insert, matched 5' end of insert.
+                bb_match_end = b_hsp.hit_end if same_strand else b_hsp.hit_start
                 bb_end_inq = b_hsp.query_end
                 diff = fixed_pos - bb_end_inq
-                insert_position = bb_match_end + diff
+                insert_offset = 0 if same_strand else 5
+                insert_position = bb_match_end + diff + insert_offset
                 linker_length = i_hsp.query_start - self._fixed_end
                 linker_seq = self.read_seq[self._fixed_end+1:i_hsp.query_start]
             else:
                 # - strand of read, matched 5' end of insert
-                bb_match_end = b_hsp.hit_end
+                bb_match_end = b_hsp.hit_end if same_strand else b_hsp.hit_start
                 bb_start_inq = b_hsp.query_start
                 diff = bb_start_inq - (fixed_pos + len(fixed_seq))
-                insert_position = bb_match_end + diff
+                insert_offset = 0 if same_strand else 5
+                insert_position = bb_match_end + diff + insert_offset
                 linker_length = self._fixed_start - i_hsp.query_end
                 linker_seq = self.read_seq[i_hsp.query_end:self._fixed_start-1]
                 linker_seq = linker_seq.reverse_complement()
         else:
             if self._insert_match_strand > 0:
                 # + strand of read, matched 3' end of insert.
-                bb_match_start = b_hsp.hit_start
+                bb_match_start = b_hsp.hit_start if same_strand else b_hsp.hit_end
                 bb_start_inq = b_hsp.query_start
                 diff = bb_start_inq - (fixed_pos + len(fixed_seq))
-                insert_position = bb_match_start - diff + 5
+                insert_offset = 5 if same_strand else 0
+                insert_position = bb_match_start - diff + insert_offset
                 linker_length = self._fixed_start - i_hsp.query_end
                 linker_seq = self.read_seq[i_hsp.query_end:self._fixed_start]
             else:
                 # - strand of read, matched 3' end of insert.
-                bb_match_start = b_hsp.hit_start
+                bb_match_start = b_hsp.hit_start if same_strand else b_hsp.hit_end
                 bb_end_inq = b_hsp.query_end
                 diff = fixed_pos - bb_end_inq
-                insert_position = bb_match_start - diff + 5
+                insert_offset = 5 if same_strand else 0
+                insert_position = bb_match_start - diff + insert_offset
                 linker_length = i_hsp.query_start - self._fixed_end
                 linker_seq = self.read_seq[self._fixed_end:i_hsp.query_start]
                 linker_seq = linker_seq.reverse_complement()
@@ -328,6 +312,8 @@ class ReadAlignmentData(object):
         self._linker_seq = linker_seq
         
         insert_in_frame = ((insert_position + 1) % 3 == 0)
+        if not self._has_forward_insertion:
+            insert_in_frame = False
         linker_in_frame = (linker_length % 3) == 0
         self._insertion_in_frame = (insert_in_frame and linker_in_frame)
         
@@ -368,6 +354,8 @@ class ReadAlignmentData(object):
     read_seq = property(lambda self: self._read_record.seq)
     linker_seq = property(lambda self: self._calc_if_none('_linker_seq'))
     linker_len = property(lambda self: len(self._calc_if_none('_linker_seq')))
+    has_insert_backbone_matches = property(lambda self: len(self._calc_if_none('_has_insert_backbone_matches')))
+    has_forward_insertion = property(lambda self: self._calc_if_none('_has_forward_insertion'))
     has_insertion = property(lambda self: self._calc_if_none('_has_insertion'))
     insertion_site = property(lambda self: self._calc_if_none('_insertion_site'))
     insertion_in_frame = property(lambda self: self._calc_if_none('_insertion_in_frame'))
