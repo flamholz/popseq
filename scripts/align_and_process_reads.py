@@ -16,6 +16,7 @@ Requirements:
 """
 
 import argparse
+import csv
 import os
 import time
 import numpy as np
@@ -24,6 +25,7 @@ from os import path
 from scripts.util import filename_util
 from scripts.util import command_util
 from scripts.util.fasta_stuff import ConvertFASTQToFASTA, AlignReadsToDB
+from sequtils.read_alignment_data import ReadAlignmentData
 
 
 def Main():
@@ -49,6 +51,11 @@ def Main():
                         help="Blat maximum number of gaps between tiles.")
     parser.add_argument("--blat_output_type", default="pslx",
                         help="Blat output format")
+    parser.add_argument("-o", "--summary_output_csv_filename",
+                        help="Where to write CSV output to.")
+    parser.add_argument("-n", "--no_summary_output", dest='summary_output', action='store_false')
+    parser.add_argument("-s", "--summary_output", dest='summary_output', action='store_true')
+    parser.set_defaults(summary_output=True)
     args = parser.parse_args()
 
     # Check that everything we need exists.
@@ -61,6 +68,9 @@ def Main():
                             read_filenames)
     print 'Read filenames:', ','.join(read_filenames)
     assert len(read_filenames) > 0, 'Must provide reads!'
+    if args.summary_output:
+        assert args.summary_output_csv_filename, 'Must provide output filename to write output.'
+    
     # Check that all the input files exist.
     filename_util.CheckAllExist(read_filenames)
 
@@ -110,8 +120,72 @@ def Main():
     print 'Finished BLAT alignment to backbone, took %.3f seconds' % align_duration
 
     total_duration = time.time() - start_ts
-    print 'Done, full script took %.2f minutes' % (total_duration / 60.0)
+    print 'Done aligning, took %.2f minutes' % (total_duration / 60.0)
 
+    if not args.summary_output:
+        print 'Not asked for summary output, bailing'
+        return
+
+    insert_aligned_fnames = insert_psl_fnames
+    backbone_aligned_fnames = backbone_psl_fnames
+    fasta_fnames = fasta_fnames
+
+    # Make sure all the filenames are in the same order so we can zip them.
+    insert_aligned_fnames = sorted(insert_aligned_fnames)
+    backbone_aligned_fnames = sorted(backbone_aligned_fnames)
+    fasta_fnames = sorted(fasta_fnames)
+    assert insert_aligned_fnames
+    assert backbone_aligned_fnames
+    assert fasta_fnames
+    assert len(insert_aligned_fnames) == len(backbone_aligned_fnames)
+    assert len(fasta_fnames) == len(insert_aligned_fnames)
+    print 'Insert aligned filenames'
+    print insert_aligned_fnames
+    print 'Backbone aligned filenames'
+    print backbone_aligned_fnames
+    print 'FASTA fnames'
+    print fasta_fnames
+    
+    # Gather all the reads information by read ID.
+    start_ts = time.time()
+    read_data_by_id = {}
+    for insert_fname, backbone_fname, fasta_fname in zip(insert_aligned_fnames,
+                                                         backbone_aligned_fnames,
+                                                         fasta_fnames):
+        print 'Analyzing file set'
+        print insert_fname
+        print backbone_fname
+        print fasta_fname
+        read_data_by_id.update(ReadAlignmentData.DictFromFiles(insert_fname,
+                                                               backbone_fname,
+                                                               fasta_fname))
+    
+    insertions = [r.has_insertion for r in read_data_by_id.itervalues()]
+    fwd_insertions = [r.has_forward_insertion for r in read_data_by_id.itervalues()]
+    
+    n_total_w_matches = len(read_data_by_id) 
+    n_insertions = np.sum(insertions)
+    n_fwd_insertions = np.sum(fwd_insertions)
+    
+    print 'Total reads with any matches:', n_total_w_matches
+    print 'Reads with insertions', n_insertions
+    print 'Reads with forward insertions', n_fwd_insertions
+    
+    total_duration = time.time() - start_ts
+    print 'Done collecting read statistics, took %.2f minutes' % (total_duration / 60.0)
+    
+    start_ts = time.time()
+    out_fname = args.summary_output_csv_filename
+    print 'Writing insertion matches to', out_fname
+    with open(out_fname, 'w') as f:
+        w = csv.DictWriter(f, ReadAlignmentData.DICT_FIELDNAMES)
+        w.writeheader()
+        for rd in read_data_by_id.itervalues():
+            # Requires both matches they may not be forward or consistent.
+            if rd.has_insert_backbone_matches:
+                w.writerow(rd.AsDict())
+    total_duration = time.time() - start_ts
+    print 'Done writing read statistics, took %.2f minutes' % (total_duration / 60.0)
 
 if __name__ == '__main__':
     Main()
