@@ -41,6 +41,8 @@ def Main():
     parser.add_argument("-t", "--tmp_dir",
                         default="_read_filter_data",
                         help="Path to use to store intermediate files.")
+    parser.add_argument("--fastq_ignore_degenerate", default=False, action='store_true',
+                        help="If set, ignore reads with degenerate bases (N).")
     parser.add_argument("--blat_tile_size", type=int, default=6,
                         help="Tile size to use for BLAT search.")
     parser.add_argument("--blat_step_size", type=int, default=2,
@@ -85,7 +87,9 @@ def Main():
     start_ts = time.time()
     if not all_fa:
         print 'Converting FASTQ to FASTA'
-        fasta_fnames = ConvertFASTQToFASTA(read_filenames, args.tmp_dir)
+        keep_degenerate = not args.fastq_ignore_degenerate
+        fasta_fnames = ConvertFASTQToFASTA(read_filenames, args.tmp_dir,
+                                           keep_degenerate=keep_degenerate)
         duration = time.time() - start_ts
         print 'Finished converting to FASTA, took %.3f seconds' % duration
     else:
