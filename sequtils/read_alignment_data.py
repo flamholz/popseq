@@ -374,7 +374,7 @@ class ReadAlignmentData(object):
     read_seq = property(lambda self: self._read_record.seq)
     linker_seq = property(lambda self: self._calc_if_none('_linker_seq'))
     linker_len = property(lambda self: len(self._calc_if_none('_linker_seq')))
-    has_insert_backbone_matches = property(lambda self: len(self._calc_if_none('_has_insert_backbone_matches')))
+    has_insert_backbone_matches = property(lambda self: self._calc_if_none('_has_insert_backbone_matches'))
     has_forward_insertion = property(lambda self: self._calc_if_none('_has_forward_insertion'))
     has_insertion = property(lambda self: self._calc_if_none('_has_insertion'))
     insertion_site = property(lambda self: self._calc_if_none('_insertion_site'))
