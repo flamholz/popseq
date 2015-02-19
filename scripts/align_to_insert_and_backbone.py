@@ -45,6 +45,8 @@ def Main():
                         help="Step size to use for BLAT search.")
     parser.add_argument("--blat_min_score", type=int, default=15,
                         help="Minimum score to retain a BLAT match.")
+    parser.add_argument("--blat_max_gap", type=int, default=0,
+                        help="Blat maximum number of gaps between tiles.")
     parser.add_argument("--blat_output_type", default="pslx",
                         help="Blat output format")
     args = parser.parse_args()
@@ -88,6 +90,7 @@ def Main():
         blat_tile_size=args.blat_tile_size,
         blat_step_size=args.blat_step_size,
         blat_min_score=args.blat_min_score,
+        blat_max_gap=args.blat_max_gap,
         output_type='pslx')
     align_duration = time.time() - start_align_ts
     print 'Finished BLAT alignment to database, took %.3f seconds' % align_duration
@@ -101,6 +104,7 @@ def Main():
         blat_tile_size=args.blat_tile_size,
         blat_step_size=args.blat_step_size,
         blat_min_score=args.blat_min_score,
+        blat_max_gap=args.blat_max_gap,
         output_type='pslx')
     align_duration = time.time() - start_align_ts
     print 'Finished BLAT alignment to backbone, took %.3f seconds' % align_duration
