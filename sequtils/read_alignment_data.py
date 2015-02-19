@@ -288,7 +288,7 @@ class ReadAlignmentData(object):
                 # + strand of read for insert, matched 5' end of insert.
                 bb_match_end = b_hsp.hit_end if same_strand else b_hsp.hit_start
                 bb_end_inq = b_hsp.query_end
-                diff = (fixed_pos - bb_end_inq) #* diff_sign 
+                diff = (fixed_pos - bb_end_inq) * diff_sign 
                 insert_offset = 0 if same_strand else 5
                 insert_position = bb_match_end + diff + insert_offset
                 linker_length = i_hsp.query_start - self._fixed_end
@@ -308,7 +308,7 @@ class ReadAlignmentData(object):
                 # + strand of read, matched 3' end of insert.
                 bb_match_start = b_hsp.hit_start if same_strand else b_hsp.hit_end
                 bb_start_inq = b_hsp.query_start
-                diff = (bb_start_inq - (fixed_pos + len(fixed_seq))) #* diff_sign 
+                diff = (bb_start_inq - (fixed_pos + len(fixed_seq))) * diff_sign 
                 insert_offset = 5 if same_strand else 0
                 insert_position = bb_match_start - diff + insert_offset
                 linker_length = self._fixed_start - i_hsp.query_end
