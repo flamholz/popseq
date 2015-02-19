@@ -54,11 +54,13 @@ class ReadAlignmentData(object):
         # sequence and the 
         self._linker_seq = None
     
-    DICT_FIELDNAMES = ['read_id', 'insert_match_end', 'insert_match_strand',
+    DICT_FIELDNAMES = ['read_id', 'forward_insertion',
+                       'insert_match_end', 'insert_match_strand',
                        'backbone_match_strand', 'fixed_seq_start', 'fixed_seq_end',
                        'insertion_site', 'linker_length', 'linker_seq', 'insertion_in_frame']
     def AsDict(self):
         return {'read_id': self.read_id,
+                'forward_insertion': self.has_forward_insertion,
                 'insert_match_end': self.insert_match_end,
                 'insert_match_strand': self.insert_match_strand,
                 'backbone_match_strand': self.backbone_match_strand,
