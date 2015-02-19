@@ -113,11 +113,20 @@ class ReadAlignmentData(object):
         print read_seq
         print ''.join(annotation_l)
         print ''.join(map(str, position_l))
+        
+        i_hsp = self.insert_hsp
+        b_hsp = self.backbone_hsp
+        print 'Insert query position %d:%d' % (i_hsp.query_start, i_hsp.query_end)
+        print 'Backbone query position %d:%d' % (b_hsp.query_start, b_hsp.query_end)
+        print 'Insert position %d:%d' % (i_hsp.hit_start, i_hsp.hit_end)
+        print 'Backbone position %d:%d' % (b_hsp.hit_start, b_hsp.hit_end) 
+        print 'Read length', len(self._read_record.seq)
         print 'Insert end matched', self.insert_match_end
         print 'Insert matches strand', self.insert_match_strand
         print 'Backbone matches strand', self.backbone_match_strand
         print 'Calculated insert position', self.insertion_site
         print 'Calculated linker length', self.linker_length
+        
 
     @staticmethod
     def DictFromFiles(insert_alignment_fname,
@@ -148,6 +157,10 @@ class ReadAlignmentData(object):
                 print 'processing insert match %d' % i
                 
             for hsp in record.hsps:
+                # Don't even care if the match isn't contiguous.
+                # TODO: test if this removed real matches.
+                if hsp.is_fragmented:
+                    continue
                 
                 read_id = hsp.query_id
                 if read_id in read_data:
@@ -168,7 +181,11 @@ class ReadAlignmentData(object):
                 print 'processing backbone match %d' % i
                 
             for hsp in record.hsps:
-            
+                # Don't even care if the match isn't contiguous.
+                # TODO: test if this removed real matches.
+                if hsp.is_fragmented:
+                    continue
+                
                 read_id = hsp.query_id
                 if read_id in backbone_aligned_ids:
                     duplicated_backbone_ids.add(read_id)
@@ -265,12 +282,13 @@ class ReadAlignmentData(object):
         linker_length = None
         linker_seq = None
         same_strand = self._insert_match_strand == self._backbone_match_strand
+        diff_sign = 1 if same_strand else -1
         if self._insert_match_end == '5p':
             if self._insert_match_strand > 0:
                 # + strand of read for insert, matched 5' end of insert.
                 bb_match_end = b_hsp.hit_end if same_strand else b_hsp.hit_start
                 bb_end_inq = b_hsp.query_end
-                diff = fixed_pos - bb_end_inq
+                diff = (fixed_pos - bb_end_inq) #* diff_sign 
                 insert_offset = 0 if same_strand else 5
                 insert_position = bb_match_end + diff + insert_offset
                 linker_length = i_hsp.query_start - self._fixed_end
@@ -279,7 +297,7 @@ class ReadAlignmentData(object):
                 # - strand of read, matched 5' end of insert
                 bb_match_end = b_hsp.hit_end if same_strand else b_hsp.hit_start
                 bb_start_inq = b_hsp.query_start
-                diff = bb_start_inq - (fixed_pos + len(fixed_seq))
+                diff = diff_sign * (bb_start_inq - (fixed_pos + len(fixed_seq)))
                 insert_offset = 0 if same_strand else 5
                 insert_position = bb_match_end + diff + insert_offset
                 linker_length = self._fixed_start - i_hsp.query_end
@@ -290,7 +308,7 @@ class ReadAlignmentData(object):
                 # + strand of read, matched 3' end of insert.
                 bb_match_start = b_hsp.hit_start if same_strand else b_hsp.hit_end
                 bb_start_inq = b_hsp.query_start
-                diff = bb_start_inq - (fixed_pos + len(fixed_seq))
+                diff = (bb_start_inq - (fixed_pos + len(fixed_seq))) #* diff_sign 
                 insert_offset = 5 if same_strand else 0
                 insert_position = bb_match_start - diff + insert_offset
                 linker_length = self._fixed_start - i_hsp.query_end
@@ -299,7 +317,7 @@ class ReadAlignmentData(object):
                 # - strand of read, matched 3' end of insert.
                 bb_match_start = b_hsp.hit_start if same_strand else b_hsp.hit_end
                 bb_end_inq = b_hsp.query_end
-                diff = fixed_pos - bb_end_inq
+                diff = diff_sign * (fixed_pos - bb_end_inq)
                 insert_offset = 5 if same_strand else 0
                 insert_position = bb_match_start - diff + insert_offset
                 linker_length = i_hsp.query_start - self._fixed_end

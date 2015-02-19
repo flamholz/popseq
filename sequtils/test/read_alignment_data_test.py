@@ -224,6 +224,7 @@ class ReadAligmentDataTest(unittest.TestCase):
         self.assertFalse(rd.insertion_in_frame)
         self.assertEquals(6, rd.linker_length)
         self.assertEquals('GCTGCT', rd.linker_seq.tostring())
+        
 
 """
     def testRunAll(self):
