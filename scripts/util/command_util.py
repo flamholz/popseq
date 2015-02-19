@@ -3,13 +3,15 @@
 import subprocess
 
 
-def ToFASTACommand(fastq_path, fasta_path):
+def ToFASTACommand(fastq_path, fasta_path, keep_degenerate=True):
 	"""Returns a shell command to convert the given FASTQ to FASTA."""
-	return ['fastq_to_fasta',
-		    '-i', fastq_path,
-		    '-o', fasta_path,
-			'-Q33']
-
+	l = ['fastq_to_fasta',
+	    '-i', fastq_path,
+	    '-o', fasta_path,
+		'-Q33']
+	if keep_degenerate:
+		l.append('-n')
+	return l
 
 def BLATCommand(db_fname, query_fname, output_fname,
 				blat_tile_size=10, blat_step_size=3,

@@ -15,7 +15,7 @@ from scripts.util import filename_util
 from scripts.util import command_util
 
 
-def ConvertFASTQToFASTA(fastq_fnames, output_dir):
+def ConvertFASTQToFASTA(fastq_fnames, output_dir, keep_degenerate=True):
 	"""Calls out to compiled executable to convert FASTQ files to FASTA.
 	
 	Args:
@@ -33,7 +33,9 @@ def ConvertFASTQToFASTA(fastq_fnames, output_dir):
 			continue
 
 		print 'Writing FASTA output to', out_fname
-		to_fasta_command = command_util.ToFASTACommand(fname, out_fname)
+		to_fasta_command = command_util.ToFASTACommand(
+			fname, out_fname,
+			keep_degenerate=keep_degenerate)
 		ret = subprocess.call(to_fasta_command)
 		assert ret == 0, '%s failed' % to_fasta_command[0]
 	return fasta_fnames
