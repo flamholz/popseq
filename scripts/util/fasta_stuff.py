@@ -44,6 +44,7 @@ def AlignReadsToDB(insert_db_fname, fasta_fnames, output_dir,
                    blat_tile_size=10,
                    blat_step_size=3,
                    blat_min_score=10,
+                   blat_max_gap=0,
                    output_type='psl'):
     """Calls out to BLAT to align reads to the given sequences.
 
@@ -70,6 +71,7 @@ def AlignReadsToDB(insert_db_fname, fasta_fnames, output_dir,
             blat_tile_size=blat_tile_size,
             blat_step_size=blat_step_size,
             blat_min_score=blat_min_score,
+            blat_max_gap=blat_max_gap,
             output_type=output_type)
         print 'BLAT command', ' '.join(blat_command)
         ret = subprocess.call(blat_command)

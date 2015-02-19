@@ -13,7 +13,8 @@ def ToFASTACommand(fastq_path, fasta_path):
 
 def BLATCommand(db_fname, query_fname, output_fname,
 				blat_tile_size=10, blat_step_size=3,
-				blat_min_score=10, output_type='psl'):
+				blat_min_score=10, blat_max_gap=0,
+				output_type='psl'):
 	"""Returns a shell to BLAT search with."""
 	command = ['blat', db_fname, query_fname, output_fname,
 			   '-q=dna', '-t=dna',  # DB and query are DNA
