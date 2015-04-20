@@ -5,12 +5,6 @@ from Bio import SearchIO
 from Bio import Seq
 from Bio import SeqIO
 
-"""
-TODO: extract linker sequence and length.
-TODO: make sure that reads on the 3' and 5' end of the same 
-      insertion will yield the same insertion site.
-"""
-
 
 class ReadAlignmentData(object):
     
