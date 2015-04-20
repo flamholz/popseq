@@ -16,7 +16,7 @@ from rpy2.robjects.packages import importr
 
 
 def Main():
-    parser = argparse.ArgumentParser(description='Filter reads.')
+    parser = argparse.ArgumentParser(description='Calculate fold enrichment and P-values.')
     parser.add_argument("--data_pre_csv", required=True,
                         help="Path to CSV summarizing variants in reference sample.")
     parser.add_argument("--data_post_csv", required=True,
