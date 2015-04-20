@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
-"""Filters reads.
+"""Aligns reads to insert and backbone, finds matches.
 
-Aligns reads to reference sequences (e.g. insert) and then produces a FASTA file
-with only those reads that match.
+One step script -- calls BLAT to perform alignment. Collects data from BLAT
+to find those reads which match both insert and backbone. Uses match
+statistics to calculate the position of the match and various other
+data about it. Data is output to a CSV file which can be analyzed further.
 
 Requirements:
 1) FASTX toolkit installed (for fastq_to_fasta).
