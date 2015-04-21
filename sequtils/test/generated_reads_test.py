@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import json
 
-from sequtils.read_alignment_data import ReadAlignmentData
+from sequtils import read_alignment_data as rad
 
 class ReadAligmentDataTest(unittest.TestCase):                                         
 
@@ -13,13 +13,16 @@ class ReadAligmentDataTest(unittest.TestCase):
     BACKBONE_ALIGNMENT_PSL = 'sequtils/test/data/generated_transposition_reads_backbone_aligned.pslx'
     READS_FASTA = 'sequtils/test/data/generated_transposition_reads.fa'
     
+    FACTORY = rad.ReadAlignmentDataFactory(backbone_start_offset=23,
+                                           fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
+                                           fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
     READ_DATA = {}
     
     @classmethod
     def setUpClass(cls):
-        cls.READ_DATA = ReadAlignmentData.DictFromFiles(cls.INSERT_ALIGNMENT_PSL,
-                                                        cls.BACKBONE_ALIGNMENT_PSL,
-                                                        cls.READS_FASTA)
+        cls.READ_DATA = cls.FACTORY.DictFromFiles(cls.INSERT_ALIGNMENT_PSL,
+                                                  cls.BACKBONE_ALIGNMENT_PSL,
+                                                  cls.READS_FASTA)
         print 'Finished reading test data.'
         
     def testCorrectInsertionSite(self):

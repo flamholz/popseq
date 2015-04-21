@@ -4,8 +4,7 @@ import unittest
 import glob
 import numpy as np
 
-from sequtils.read_alignment_data import ReadAlignmentData
-
+from sequtils import read_alignment_data as rad
 
 class ReadAligmentDataTest(unittest.TestCase):
 
@@ -13,13 +12,16 @@ class ReadAligmentDataTest(unittest.TestCase):
     BACKBONE_ALIGNMENT_PSL = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_backbone_aligned.pslx'
     READS_FASTA = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k.fa'
     
+    FACTORY = rad.ReadAlignmentDataFactory(backbone_start_offset=23,
+                                           fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
+                                           fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
     READ_DATA = {}
     
     @classmethod
     def setUpClass(cls):
-        cls.READ_DATA = ReadAlignmentData.DictFromFiles(cls.INSERT_ALIGNMENT_PSL,
-                                                        cls.BACKBONE_ALIGNMENT_PSL,
-                                                        cls.READS_FASTA)
+        cls.READ_DATA = cls.FACTORY.DictFromFiles(cls.INSERT_ALIGNMENT_PSL,
+                                                  cls.BACKBONE_ALIGNMENT_PSL,
+                                                  cls.READS_FASTA)
         print 'Finished reading test data.'
     
     def test5pPlusStrandPerfectBboneAlignment(self):
@@ -134,7 +136,7 @@ class ReadAligmentDataTest(unittest.TestCase):
         backbone_aligned = sorted(glob.glob('sequtils/test/data/cas9_pdz_inserts/Cas9_*backbone_aligned.pslx'))
         
         for insert_fname, bbone_fname, reads_fname in zip(insert_aligned, backbone_aligned, reads):
-            read_data = ReadAlignmentData.DictFromFiles(insert_fname, bbone_fname, reads_fname)
+            read_data = self.FACTORY.DictFromFiles(insert_fname, bbone_fname, reads_fname)
             self.assertEquals(4, len(read_data), msg='should have 4 reads per example that matched')
             
             insert_sites = []
@@ -179,7 +181,6 @@ class ReadAligmentDataTest(unittest.TestCase):
         ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:7921:3089"
 
         rd = self.READ_DATA[ex_key]
-        rd.PrettyPrint()
         
         self.assertTrue(rd.has_insertion)
         self.assertFalse(rd.has_forward_insertion)
@@ -196,7 +197,6 @@ class ReadAligmentDataTest(unittest.TestCase):
         ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:1835:4416"
 
         rd = self.READ_DATA[ex_key]
-        rd.PrettyPrint()
         
         self.assertTrue(rd.has_insertion)
         self.assertFalse(rd.has_forward_insertion)
@@ -213,7 +213,6 @@ class ReadAligmentDataTest(unittest.TestCase):
         ex_key = "HWI-700460R:435:C5EWEACXX:4:1101:15525:6413"
 
         rd = self.READ_DATA[ex_key]
-        rd.PrettyPrint()
         
         self.assertTrue(rd.has_insertion)
         self.assertFalse(rd.has_forward_insertion)
@@ -225,9 +224,8 @@ class ReadAligmentDataTest(unittest.TestCase):
         self.assertEquals(6, rd.linker_length)
         self.assertEquals('GCTGCT', rd.linker_seq.tostring())
         
-
-"""
     def testRunAll(self):
+        """Rename to run."""
         for key, read_data in self.READ_DATA.iteritems():
             if read_data.has_insertion:
                 read_data.insertion_site
@@ -236,4 +234,7 @@ class ReadAligmentDataTest(unittest.TestCase):
                     print key
                     read_data.PrettyPrint()
                     print
-"""
+
+
+if __name__ == '__main__':
+    unittest.main()
