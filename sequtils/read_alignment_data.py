@@ -75,7 +75,7 @@ class ReadAlignmentData(object):
         self._linker_seq = None
         
         # Calculate insertion parameters on construction!
-        self.CalculateInsertion()
+        self._CalculateInsertion()
     
     DICT_FIELDNAMES = ['read_id', 'forward_insertion',
                        'insert_match_end', 'insert_match_strand',
@@ -97,9 +97,6 @@ class ReadAlignmentData(object):
     def PrettyPrint(self):
         """Prints the read data nicely to the commandline."""
         read_seq = str(self.read_record.seq)
-        if self._has_insertion is None:
-            self.CalculateInsertion()
-            
         insert_start = self.insert_hsp.query_start
         insert_end = self.insert_hsp.query_end
         backbone_start = self.backbone_hsp.query_start
@@ -164,7 +161,7 @@ class ReadAlignmentData(object):
                 self._n_backbone_match_fragments == 1 and
                 self._insert_match_strand == self._backbone_match_strand)
         
-    def CalculateInsertion(self):
+    def _CalculateInsertion(self):
         """Calculates the position of the insertion in the backbone."""
         self._has_insert_backbone_matches = self.HasBothHSPs()
         self._has_insertion = self.HasBothHSPs()
