@@ -9,121 +9,14 @@ DEFAULT_FIXED_5P_SEQ = Seq.Seq('TGCATC')
 DEFAULT_FIXED_3P_SEQ = Seq.Seq('GCGTCA')
 
 
-class ReadAlignmentDataFactory(object):
-    def __init__(self, backbone_start_offset,
-                 fixed_5p_seq, fixed_3p_seq):
-        """Object that makes ReadAlignmentData instances.
-        
-        Args:
-            backbone_start_offset: offset of the start codon into the
-                sequence used to match the backbone (nt units). Used
-                to make insertion sites relative to the start codon.
-            fixed_5p_seq: fixed sequence verifying 5' end.
-            fixed_3p_seq: fixed sequence verifying 3' end.
-        """
-        self._start_offset = backbone_start_offset 
-        self._fixed_5p_seq = fixed_5p_seq
-        self._fixed_3p_seq = fixed_3p_seq
-    
-    def New(self, read_id):
-        return ReadAlignmentData(read_id, self._start_offset)
-
-    def DictFromFiles(self,
-                      insert_alignment_fname,
-                      backbone_alignment_fname,
-                      reads_fasta_fname):
-        """Makes a dictionary of initialized ReadAlignmentData.
-        
-        Args:
-            insert_alignment_fname: the path to the BLAT output for the insert.
-            backbone_alignment_fname: the path to the BLAT output for the backbone.
-            reads_fasta_fname: the path to the reads in FASTA format.
-        
-        Returns:
-            A dictionary mapping read ID to ReadAlignmentData.
-            Retains data only for those reads mapping to both the insert and the backbone 
-            according to the alignment data passed in.
-        """
-        read_data = {}
-        
-        # Fetch all insert alignments
-        # Do the insert first because there are many fewer matches to the insert.
-        # Can avoid memory blowup of making records for all the backbone matches this way.
-        insert_aligned_reader = SearchIO.parse(insert_alignment_fname,
-                                               'blat-psl', pslx=True)
-        duplicated_insert_ids = set()
-        for i, record in enumerate(insert_aligned_reader):
-            if i % 10000 == 0:
-                print 'processing insert match %d' % i
-                
-            for hsp in record.hsps:
-                # Don't even care if the match isn't contiguous.
-                # TODO: test if this removed real matches.
-                if hsp.is_fragmented:
-                    continue
-                
-                read_id = hsp.query_id
-                if read_id in read_data:
-                    duplicated_insert_ids.add(read_id)
-                else:
-                    # Create a new one if not there yet.
-                    rd = self.New(read_id)
-                    rd.insert_hsp = hsp
-                    read_data[read_id] = rd
-                
-        # Fetch all the backbone alignments
-        backbone_aligned_ids = set()
-        duplicated_backbone_ids = set()
-        backbone_aligned_reader = SearchIO.parse(backbone_alignment_fname,
-                                                 'blat-psl', pslx=True) 
-        for i, record in enumerate(backbone_aligned_reader):
-            if i % 10000 == 0:
-                print 'processing backbone match %d' % i
-                
-            for hsp in record.hsps:
-                # Don't even care if the match isn't contiguous.
-                # TODO: test if this removed real matches.
-                if hsp.is_fragmented:
-                    continue
-                
-                read_id = hsp.query_id
-                if read_id in backbone_aligned_ids:
-                    duplicated_backbone_ids.add(read_id)
-                backbone_aligned_ids.add(read_id)
-
-                # Only save if we had an insert match there.
-                rd = read_data.get(read_id)
-                if rd is not None:
-                    # If there was no previous backbone match or this one is 
-                    # longer, replace it. 
-                    if (rd.backbone_hsp is None or
-                        rd.backbone_hsp.query_span < hsp.query_span):
-                        rd.backbone_hsp = hsp
-        
-        print len(duplicated_insert_ids), 'duplicated insert ids'
-        print len(duplicated_backbone_ids), 'duplicated backbone ids'
-        rids_to_remove = [rid for rid in read_data
-                          if not read_data[rid].HasBothHSPs()]
-        print 'Removing', len(rids_to_remove), 'reads with no insertions'
-        for rid in rids_to_remove:
-            read_data.pop(rid)
-        print len(read_data), 'with matches to insert and backbone'
-        
-        # Fetch the sequences of the reads.
-        with open(reads_fasta_fname) as f:
-            reader = SeqIO.parse(f, 'fasta')
-            for record in reader:
-                read_id = record.id
-                if read_id in read_data:
-                    rd = read_data[read_id]
-                    rd.read_record = record
-
-        return read_data
-
-
 class ReadAlignmentData(object):
     
-    def __init__(self, read_id, backbone_start_offset,
+    def __init__(self,
+                 read_id,
+                 read_record,
+                 insert_hsp,
+                 backbone_hsp,
+                 backbone_start_offset,
                  fixed_5p_seq=DEFAULT_FIXED_5P_SEQ,
                  fixed_3p_seq=DEFAULT_FIXED_3P_SEQ):
         """Object encapsulating variant calling from reads.
@@ -139,12 +32,19 @@ class ReadAlignmentData(object):
             fixed_3p_seq: fixed sequence verifying 3' end.
         """
         self.read_id = read_id
-        self._start_offset = backbone_start_offset
         self._fixed_5p_seq = fixed_5p_seq
         self._fixed_3p_seq = fixed_3p_seq
-        self._read_record = None
-        self._backbone_hsp = None
-        self._insert_hsp = None
+        self._read_record = read_record
+        self._backbone_hsp = backbone_hsp
+        self._insert_hsp = insert_hsp
+        self._start_offset = backbone_start_offset
+        
+        # Fetch some data right out of the HSPs
+        self._insert_match_strand = insert_hsp.fragments[0].query_strand
+        self._insert_match_end = '3p' if insert_hsp.hit_id.endswith('_3p') else '5p'
+        self._n_insert_match_fragments = len(insert_hsp.fragments)
+        self._backbone_match_strand = backbone_hsp.fragments[0].query_strand
+        self._n_backbone_match_fragments = len(backbone_hsp.fragments)
         
         # 6 BP sequence fixed based on cloning.
         # Differs on 3' and 5' ends of insert.
@@ -162,9 +62,7 @@ class ReadAlignmentData(object):
         self._insertion_site = None
         self._insertion_in_frame = None
         self._linker_length = None
-        self._insert_match_end = None
-        self._insert_match_strand = None
-        self._backbone_match_strand = None
+        
         # Insertion site is the DNA coordinate in the backbone of
         # of the insertion. Calculated to give the same value regardless
         # of whether the read matched the 3' of 5' end of the insert.
@@ -175,6 +73,9 @@ class ReadAlignmentData(object):
         # If set, the sequence of the linker between the fixed
         # sequence and the 
         self._linker_seq = None
+        
+        # Calculate insertion parameters on construction!
+        self.CalculateInsertion()
     
     DICT_FIELDNAMES = ['read_id', 'forward_insertion',
                        'insert_match_end', 'insert_match_strand',
@@ -252,14 +153,9 @@ class ReadAlignmentData(object):
         print 'Calculated insert position', self.insertion_site
         print 'Calculated linker length', self.linker_length
     
-    def HasBackboneHSP(self):
-        return self._backbone_hsp is not None
-
-    def HasInsertHSP(self):
-        return self._insert_hsp is not None
-
     def HasBothHSPs(self):
-        return self.HasBackboneHSP() and self.HasInsertHSP()
+        return (self._backbone_hsp is not None and
+                self._insert_hsp is not None)
 
     def ConsistentInsertAndBackboneMatches(self):
         return (self.HasBothHSPs() and
@@ -268,7 +164,7 @@ class ReadAlignmentData(object):
                 self._n_backbone_match_fragments == 1 and
                 self._insert_match_strand == self._backbone_match_strand)
         
-    def CalculateInsertion(self, ):
+    def CalculateInsertion(self):
         """Calculates the position of the insertion in the backbone."""
         self._has_insert_backbone_matches = self.HasBothHSPs()
         self._has_insertion = self.HasBothHSPs()
@@ -371,53 +267,208 @@ class ReadAlignmentData(object):
         # NOTE: +5 bp on the 3' end of the insert b/c of the
         # 5 bp duplicated by the transposase
     
-    def _get_read_record(self):
+    @property
+    def read_record(self):
         return self._read_record
-    def _set_read_record(self, read_record):
-        self._read_record = read_record
-        
-    def _get_backbone_hsp(self):
+    @property
+    def backbone_hsp(self):
         return self._backbone_hsp
-    def _set_backbone_hsp(self, hsp):        
-        self._backbone_hsp = hsp
-        self._n_backbone_match_fragments = len(hsp.fragments)
-        self._backbone_match_strand = hsp.fragments[0].query_strand
-    
-    def _get_insert_hsp(self):
+    @property
+    def insert_hsp(self):
         return self._insert_hsp
-    def _set_insert_hsp(self, hsp):
-        self._insert_hsp = hsp
-        self._n_insert_match_fragments = len(hsp.fragments)
-        self._insert_match_strand = hsp.fragments[0].query_strand
-        self._insert_match_end = '3p' if hsp.hit_id.endswith('_3p') else '5p'
     
-    def _calc_if_none(self, key):
-        val = self.__getattribute__(key)
-        if val is not None:
-            return val
-        self.CalculateInsertion()
-        return self.__getattribute__(key)
-    
-    # Properties        
-    backbone_hsp = property(_get_backbone_hsp, _set_backbone_hsp)
-    insert_hsp = property(_get_insert_hsp, _set_insert_hsp)
-    read_record = property(_get_read_record, _set_read_record)
     read_seq = property(lambda self: self._read_record.seq)
-    linker_seq = property(lambda self: self._calc_if_none('_linker_seq'))
-    linker_len = property(lambda self: len(self._calc_if_none('_linker_seq')))
-    has_insert_backbone_matches = property(lambda self: self._calc_if_none('_has_insert_backbone_matches'))
-    has_forward_insertion = property(lambda self: self._calc_if_none('_has_forward_insertion'))
-    has_insertion = property(lambda self: self._calc_if_none('_has_insertion'))
-    insertion_site = property(lambda self: self._calc_if_none('_insertion_site'))
-    insertion_in_frame = property(lambda self: self._calc_if_none('_insertion_in_frame'))
-    linker_length = property(lambda self: self._calc_if_none('_linker_length'))
+    linker_seq = property(lambda self: self._linker_seq)
+    linker_len = property(lambda self: len(self._linker_seq))
+    has_insert_backbone_matches = property(lambda self: self._has_insert_backbone_matches)
+    has_forward_insertion = property(lambda self: self._has_forward_insertion)
+    has_insertion = property(lambda self: self._has_insertion)
+    insertion_site = property(lambda self: self._insertion_site)
+    insertion_in_frame = property(lambda self: self._insertion_in_frame)
+    linker_length = property(lambda self: self._linker_length)
     insert_match_end = property(lambda self: self._insert_match_end)
     insert_match_strand = property(lambda self: self._insert_match_strand)
     backbone_match_strand = property(lambda self: self._backbone_match_strand)
-    fixed_start = property(lambda self: self._calc_if_none('_fixed_start'))
-    fixed_end = property(lambda self: self._calc_if_none('_fixed_end'))
-    fixed_seq = property(lambda self: self._calc_if_none('_fixed_seq'))
+    fixed_start = property(lambda self: self._fixed_start)
+    fixed_end = property(lambda self: self._fixed_end)
+    fixed_seq = property(lambda self: self._fixed_seq)
+
+
+class ReadAlignmentBuilder(object):
+    """Builder pattern for ReadAlignmentData.
     
+    Used because we need a placeholder to collect read-specific data before
+    analysis. Allows construction of ReadAlignmentData objects to be much
+    simplified.
+    """
+    def __init__(self, read_id, backbone_start_offset,
+                 fixed_5p_seq=DEFAULT_FIXED_5P_SEQ,
+                 fixed_3p_seq=DEFAULT_FIXED_3P_SEQ):
+        self.read_id = read_id
+        self.read_record = None
+        self.backbone_hsp = None
+        self.insert_hsp = None
     
+        self._start_offset = backbone_start_offset
+        self._fixed_5p_seq = fixed_5p_seq
+        self._fixed_3p_seq = fixed_3p_seq
     
+    def HasInsertAndBackboneHSPs(self):
+        return (self.insert_hsp is not None and
+                self.backbone_hsp is not None)
+    
+    def Complete(self):
+        """Has all required data."""
+        return (self.read_id and
+                self.read_record and 
+                self.insert_hsp and
+                self.backbone_hsp)
+    
+    def Build(self):
+        """Build a ReadAlignmentData object.
+        
+        Returns an instance of ReadAlignmentData from accumulated data.
+        """
+        assert self.Complete()
+        rd = ReadAlignmentData(self.read_id, self.read_record,
+                               self.insert_hsp, self.backbone_hsp, self._start_offset,
+                               self._fixed_5p_seq, self._fixed_3p_seq)
+        return rd
+    
+
+class ReadAlignmentDataFactory(object):
+    def __init__(self, backbone_start_offset,
+                 fixed_5p_seq, fixed_3p_seq):
+        """Object that makes ReadAlignmentData instances.
+        
+        Args:
+            backbone_start_offset: offset of the start codon into the
+                sequence used to match the backbone (nt units). Used
+                to make insertion sites relative to the start codon.
+            fixed_5p_seq: fixed sequence verifying 5' end.
+            fixed_3p_seq: fixed sequence verifying 3' end.
+        """
+        self._start_offset = backbone_start_offset 
+        self._fixed_5p_seq = fixed_5p_seq
+        self._fixed_3p_seq = fixed_3p_seq
+    
+    def NewBuilder(self, read_id):
+        """Creates a ReadAlignmentBuilder object."""
+        return ReadAlignmentBuilder(read_id, self._start_offset,
+                                    self._fixed_5p_seq, self._fixed_3p_seq)
+
+    def DictFromFiles(self,
+                      insert_alignment_fname,
+                      backbone_alignment_fname,
+                      reads_fasta_fname):
+        """Makes a dictionary of initialized ReadAlignmentData.
+        
+        Args:
+            insert_alignment_fname: the path to the BLAT output for the insert.
+            backbone_alignment_fname: the path to the BLAT output for the backbone.
+            reads_fasta_fname: the path to the reads in FASTA format.
+        
+        Returns:
+            A dictionary mapping read ID to ReadAlignmentData.
+            Retains data only for those reads mapping to both the insert and the backbone 
+            according to the alignment data passed in.
+        """
+        read_data_builders = {}
+        
+        # Fetch all insert alignments
+        # Do the insert first because there are many fewer matches to the insert.
+        # Can avoid memory blowup of making records for all the backbone matches this way.
+        insert_aligned_reader = SearchIO.parse(insert_alignment_fname,
+                                               'blat-psl', pslx=True)
+        duplicated_insert_ids = set()
+        for i, record in enumerate(insert_aligned_reader):
+            if i % 10000 == 0:
+                print 'processing insert match %d' % i
+                
+            for hsp in record.hsps:
+                # Don't even care if the match isn't contiguous.
+                # TODO: test if this removed real matches.
+                if hsp.is_fragmented:
+                    continue
+                
+                read_id = hsp.query_id
+                if read_id in read_data_builders:
+                    duplicated_insert_ids.add(read_id)
+                else:
+                    # Create a new one if not there yet.
+                    rb = self.NewBuilder(read_id)
+                    rb.insert_hsp = hsp
+                    read_data_builders[read_id] = rb
+                
+        # Fetch all the backbone alignments
+        backbone_aligned_ids = set()
+        duplicated_backbone_ids = set()
+        backbone_aligned_reader = SearchIO.parse(backbone_alignment_fname,
+                                                 'blat-psl', pslx=True) 
+        for i, record in enumerate(backbone_aligned_reader):
+            if i % 10000 == 0:
+                print 'processing backbone match %d' % i
+                
+            for hsp in record.hsps:
+                # Don't even care if the match isn't contiguous.
+                # TODO: test if this removed real matches.
+                if hsp.is_fragmented:
+                    continue
+                
+                read_id = hsp.query_id
+                if read_id in backbone_aligned_ids:
+                    duplicated_backbone_ids.add(read_id)
+                backbone_aligned_ids.add(read_id)
+
+                # Only save if we had an insert match there.
+                rb = read_data_builders.get(read_id)
+                if rb is not None:
+                    # If there was no previous backbone match or this one is 
+                    # longer, replace it. 
+                    if (rb.backbone_hsp is None or
+                        rb.backbone_hsp.query_span < hsp.query_span):
+                        rb.backbone_hsp = hsp
+        
+        print len(duplicated_insert_ids), 'duplicated insert ids'
+        print len(duplicated_backbone_ids), 'duplicated backbone ids'
+        rids_to_remove = [rid for rid in read_data_builders
+                          if not read_data_builders[rid].HasInsertAndBackboneHSPs()]
+        print 'Removing', len(rids_to_remove), 'reads with no insertions'
+        for rid in rids_to_remove:
+            read_data_builders.pop(rid)
+        print len(read_data_builders), 'with matches to insert and backbone'
+        
+        # Fetch the sequences of the reads.
+        with open(reads_fasta_fname) as f:
+            reader = SeqIO.parse(f, 'fasta')
+            for record in reader:
+                read_id = record.id
+                if read_id in read_data_builders:
+                    rb = read_data_builders[read_id]
+                    rb.read_record = record
+
+        # Generate ReadAlignmentData from builder for every remaining read.
+        read_data = dict((k, v.Build()) for k,v in read_data_builders.iteritems())
+        return read_data
+    
+    def DictFromFileLists(self,
+                          insert_alignment_fnames,
+                          backbone_alignment_fnames,
+                          reads_fasta_fnames):
+        """Generate a dictionary of ReadAlignmentData from lists of filenames.
+        
+        Lists assumed to be in the same order. Iterates over tuples.
+        
+        Args:
+            insert_alignment_fnames: list of paths to BLAT output for the insert.
+            backbone_alignment_fnames: list of paths to BLAT output for the backbone.
+            reads_fasta_fnames: list of paths to reads in FASTA format.
+        """
+        read_data_by_id = {}
+        zipped = zip(insert_alignment_fnames, backbone_alignment_fnames, reads_fasta_fnames)
+        for insert_fname, backbone_fname, fasta_fname in zipped:
+            read_data_by_id.update(self.DictFromFiles(insert_fname,
+                                                      backbone_fname,
+                                                      fasta_fname))
+        return read_data_by_id
     
