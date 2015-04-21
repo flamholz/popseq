@@ -22,6 +22,7 @@ import csv
 import os
 import time
 import numpy as np
+import sequtils.read_alignment_data as rad
 
 from os import path
 from scripts.util import filename_util
@@ -31,7 +32,7 @@ from sequtils.read_alignment_data import ReadAlignmentData
 
 
 def Main():
-    parser = argparse.ArgumentParser(description='Filter reads.')
+    parser = argparse.ArgumentParser(description='Filter reads.', fromfile_prefix_chars='@')
     parser.add_argument("-i", "--insert_db_filename", required=True,
                         help=("Path to FASTA file containing insert ends to align reads to. "
                               "Will only retain reads that align well to this DB."))
@@ -40,6 +41,9 @@ def Main():
                               "Will bin reads by where they align to this sequence."))
     parser.add_argument("-r", "--read_filenames", nargs='+', required=True,
                         help="Path to FASTQ files containing reads.")
+    parser.add_argument("--start_offset", required=True, type=int,
+                        help=("Offset of the start codon into the sequence used "
+                              "to match the backbone (nt units)"))
     parser.add_argument("-t", "--tmp_dir",
                         default="_read_filter_data",
                         help="Path to use to store intermediate files.")
@@ -66,6 +70,7 @@ def Main():
     command_util.CheckAllInstalled(['fastq_to_fasta', 'blat'])
 
     # Get the filenames we are supposed to process.
+    print 'Input read filenames', args.read_filenames
     read_filenames = filename_util.ForceExpand(args.read_filenames)
     print 'Read filenames', read_filenames
     read_filenames = filter(lambda n: path.splitext(n)[1] in ['.fq', '.fastq', '.fa', '.fasta'],
@@ -153,6 +158,9 @@ def Main():
     print fasta_fnames
     
     # Gather all the reads information by read ID.
+    rad_factory = rad.ReadAlignmentDataFactory(backbone_start_offset=args.start_offset,
+                                               fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
+                                               fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
     start_ts = time.time()
     read_data_by_id = {}
     for insert_fname, backbone_fname, fasta_fname in zip(insert_aligned_fnames,
@@ -162,9 +170,9 @@ def Main():
         print insert_fname
         print backbone_fname
         print fasta_fname
-        read_data_by_id.update(ReadAlignmentData.DictFromFiles(insert_fname,
-                                                               backbone_fname,
-                                                               fasta_fname))
+        read_data_by_id.update(rad_factory.DictFromFiles(insert_fname,
+                                                         backbone_fname,
+                                                         fasta_fname))
     
     insertions = [r.has_insertion for r in read_data_by_id.itervalues()]
     fwd_insertions = [r.has_forward_insertion for r in read_data_by_id.itervalues()]
