@@ -158,22 +158,14 @@ def Main():
     print fasta_fnames
     
     # Gather all the reads information by read ID.
+    
+    start_ts = time.time()
     rad_factory = rad.ReadAlignmentDataFactory(backbone_start_offset=args.start_offset,
                                                fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
                                                fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
-    start_ts = time.time()
-    read_data_by_id = {}
-    for insert_fname, backbone_fname, fasta_fname in zip(insert_aligned_fnames,
-                                                         backbone_aligned_fnames,
-                                                         fasta_fnames):
-        print 'Analyzing file set'
-        print insert_fname
-        print backbone_fname
-        print fasta_fname
-        read_data_by_id.update(rad_factory.DictFromFiles(insert_fname,
-                                                         backbone_fname,
-                                                         fasta_fname))
-    
+    read_data_by_id = rad_factory.DictFromFileLists(insert_aligned_fnames,
+                                                    backbone_aligned_fnames,
+                                                    fasta_fnames)
     insertions = [r.has_insertion for r in read_data_by_id.itervalues()]
     fwd_insertions = [r.has_forward_insertion for r in read_data_by_id.itervalues()]
     
