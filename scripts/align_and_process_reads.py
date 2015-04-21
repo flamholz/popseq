@@ -70,6 +70,7 @@ def Main():
     command_util.CheckAllInstalled(['fastq_to_fasta', 'blat'])
 
     # Get the filenames we are supposed to process.
+    # TODO(flamholz): refactor this code so it's calling out to well-named functions.
     print 'Input read filenames', args.read_filenames
     read_filenames = filename_util.ForceExpand(args.read_filenames)
     print 'Read filenames', read_filenames
