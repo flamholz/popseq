@@ -49,7 +49,7 @@ def Main():
                         help="Path to use to store intermediate files.")
     parser.add_argument("--fastq_ignore_degenerate", default=False, action='store_true',
                         help="If set, ignore reads with degenerate bases (N).")
-    parser.add_argument("--blat_tile_size", type=int, default=6,
+    parser.add_argument("--blat_tile_size", type=int, default=8,
                         help="Tile size to use for BLAT search.")
     parser.add_argument("--blat_step_size", type=int, default=2,
                         help="Step size to use for BLAT search.")
@@ -57,6 +57,10 @@ def Main():
                         help="Minimum score to retain a BLAT match.")
     parser.add_argument("--blat_max_gap", type=int, default=0,
                         help="Blat maximum number of gaps between tiles.")
+    parser.add_argument("--blat_one_off", type=int, default=0,
+                        help="Allow one mismatch in BLAT tile to trigger matching.")
+    parser.add_argument("--blat_rep_match", type=int, default=1000000,
+                        help="Number of tile repetitions before marked overused.")
     parser.add_argument("--blat_output_type", default="pslx",
                         help="Blat output format")
     parser.add_argument("-o", "--summary_output_csv_filename",
@@ -65,6 +69,16 @@ def Main():
     parser.add_argument("-s", "--summary_output", dest='summary_output', action='store_true')
     parser.set_defaults(summary_output=True)
     args = parser.parse_args()
+    
+    """
+    NOTE: BLAT documents guarantee finding of exact matches of length
+        2*step_size + tile_size - 1
+    With the default parameters above, this will give us all exact matches
+    of 11 nt or longer.
+    
+    See documentation here:
+        http://genome.ucsc.edu/FAQ/FAQblat.html#blat8 
+    """
 
     # Check that everything we need exists.
     command_util.CheckAllInstalled(['fastq_to_fasta', 'blat'])
