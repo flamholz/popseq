@@ -6,6 +6,8 @@ import numpy as np
 import json
 
 from sequtils import read_alignment_data as rad
+from sequtils.read_alignment_data import factory
+
 
 class ReadAligmentDataTest(unittest.TestCase):                                         
 
@@ -13,9 +15,9 @@ class ReadAligmentDataTest(unittest.TestCase):
     BACKBONE_ALIGNMENT_PSL = 'sequtils/test/data/generated_transposition_reads_backbone_aligned.pslx'
     READS_FASTA = 'sequtils/test/data/generated_transposition_reads.fa'
     
-    FACTORY = rad.ReadAlignmentDataFactory(backbone_start_offset=23,
-                                           fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
-                                           fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
+    FACTORY = factory.ReadAlignmentDataFactory(backbone_start_offset=23,
+                                               fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
+                                               fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
     READ_DATA = {}
     
     @classmethod
