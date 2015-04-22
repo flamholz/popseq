@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # <nbformat>2</nbformat>
 
+import csv
+import sequtils.read_alignment_data as rad
+
 from Bio import SearchIO
 from Bio import Seq
 from Bio import SeqIO
-
-import sequtils.read_alignment_data as rad
 
 
 class ReadAlignmentDataFactory(object):
@@ -144,3 +145,17 @@ class ReadAlignmentDataFactory(object):
                                                       fasta_fname))
         return read_data_by_id
     
+    def WriteCSV(self, iterable, out_fname):
+        """Writes ReadAlignmentData to a CSV file.
+        
+        Args:
+            iterable: iterable of ReadAlignmentData objects.
+            out_fname: filename to write to.
+        """
+        with open(out_fname, 'w') as f:
+            w = csv.DictWriter(f, rad.ReadAlignmentData.DICT_FIELDNAMES)
+            w.writeheader()
+            for rd in iterable:
+                # Requires both matches they may not be forward or consistent.
+                if rd.has_insert_backbone_matches:
+                    w.writerow(rd.AsDict())
