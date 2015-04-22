@@ -28,7 +28,7 @@ from os import path
 from scripts.util import filename_util
 from scripts.util import command_util
 from scripts.util.fasta_stuff import ConvertFASTQToFASTA, AlignReadsToDB
-from sequtils.read_alignment_data import ReadAlignmentData
+from sequtils.read_alignment_data import factory
 
 
 def Main():
@@ -173,11 +173,10 @@ def Main():
     print fasta_fnames
     
     # Gather all the reads information by read ID.
-    
     start_ts = time.time()
-    rad_factory = rad.ReadAlignmentDataFactory(backbone_start_offset=args.start_offset,
-                                               fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
-                                               fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
+    rad_factory = factory.ReadAlignmentDataFactory(backbone_start_offset=args.start_offset,
+                                                   fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
+                                                   fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
     read_data_by_id = rad_factory.DictFromFileLists(insert_aligned_fnames,
                                                     backbone_aligned_fnames,
                                                     fasta_fnames)
@@ -198,13 +197,7 @@ def Main():
     start_ts = time.time()
     out_fname = args.summary_output_csv_filename
     print 'Writing insertion matches to', out_fname
-    with open(out_fname, 'w') as f:
-        w = csv.DictWriter(f, ReadAlignmentData.DICT_FIELDNAMES)
-        w.writeheader()
-        for rd in read_data_by_id.itervalues():
-            # Requires both matches they may not be forward or consistent.
-            if rd.has_insert_backbone_matches:
-                w.writerow(rd.AsDict())
+    rad_factory.WriteCSV(read_data_by_id.itervalues(), out_fname)
     total_duration = time.time() - start_ts
     print 'Done writing read statistics, took %.2f minutes' % (total_duration / 60.0)
 
