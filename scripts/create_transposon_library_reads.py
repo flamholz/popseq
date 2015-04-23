@@ -8,64 +8,109 @@ from random import randrange
 from random import random
 import json
 
-#number of constructs to create
+
+# Number of constructs to create
 c = 200
 
-# number of reads to create from each construct
+# Number of reads to create from each construct
 r = 1000
 
-#Target DNA region containing gene of iterest
+# Target DNA region containing gene of iterest
 target_cas9 = Seq('GATCTAAAGAGGAGAAAGGATCTATGGATAAGAAATACTCAATAGGCTTAGCTATCGGCACAAATAGCGTCGGATGGGCGGTGATCACTGATGAATATAAGGTTCCGTCTAAAAAGTTCAAGGTTCTGGGAAATACAGACCGCCACAGTATCAAAAAAAATCTTATAGGGGCTCTTTTATTTGACAGTGGAGAGACAGCGGAAGCGACTCGTCTCAAACGGACAGCTCGTAGAAGGTATACACGTCGGAAGAATCGTATTTGTTATCTACAGGAGATTTTTTCAAATGAGATGGCGAAAGTAGATGATAGTTTCTTTCATCGACTTGAAGAGTCTTTTTTGGTGGAAGAAGACAAGAAGCATGAACGTCATCCTATTTTTGGAAATATAGTAGATGAAGTTGCTTATCATGAGAAATATCCAACTATCTATCATCTGCGAAAAAAATTGGTAGATTCTACTGATAAAGCGGATTTGCGCTTAATCTATTTGGCCTTAGCGCATATGATTAAGTTTCGTGGTCATTTTTTGATTGAGGGAGATTTAAATCCTGATAATAGTGATGTGGACAAACTATTTATCCAGTTGGTACAAACCTACAATCAATTATTTGAAGAAAACCCTATTAACGCAAGTGGAGTAGATGCTAAAGCGATTCTTTCTGCACGATTGAGTAAATCAAGACGATTAGAAAATCTCATTGCTCAGCTCCCCGGTGAGAAGAAAAATGGCTTATTTGGGAATCTCATTGCTTTGTCATTGGGTTTGACCCCTAATTTTAAATCAAATTTTGATTTGGCAGAAGATGCTAAATTACAGCTTTCAAAAGATACTTACGATGATGATTTAGATAATTTATTGGCGCAAATTGGAGATCAATATGCTGATTTGTTTTTGGCAGCTAAGAATTTATCAGATGCTATTTTACTTTCAGATATCCTAAGAGTAAATACTGAAATAACTAAGGCTCCCCTATCAGCTTCAATGATTAAACGCTACGATGAACATCATCAAGACTTGACTCTTTTAAAAGCTTTAGTTCGACAACAACTTCCAGAAAAGTATAAAGAAATCTTTTTTGATCAATCAAAAAACGGATATGCAGGTTATATTGATGGGGGAGCTAGCCAAGAAGAATTTTATAAATTTATCAAACCAATTTTAGAAAAAATGGATGGTACTGAGGAATTATTGGTGAAACTAAATCGTGAAGATTTGCTGCGCAAGCAACGGACCTTTGACAACGGCTCTATTCCCCATCAAATTCACTTGGGTGAGCTGCATGCTATTTTGAGAAGACAAGAAGACTTTTATCCATTTTTAAAAGACAATCGTGAGAAGATTGAAAAAATCTTGACTTTTCGAATTCCTTATTATGTTGGTCCATTGGCGCGTGGCAATAGTCGTTTTGCATGGATGACTCGGAAGTCTGAAGAAACAATTACCCCATGGAATTTTGAAGAAGTTGTCGATAAAGGTGCTTCAGCTCAATCATTTATTGAACGCATGACAAACTTTGATAAAAATCTTCCAAATGAAAAAGTACTACCAAAACATAGTTTGCTTTATGAGTATTTTACGGTTTATAACGAATTGACAAAGGTCAAATATGTTACTGAAGGAATGCGAAAACCAGCATTTCTTTCAGGTGAACAGAAGAAAGCCATTGTTGATTTACTCTTCAAAACAAATCGAAAAGTAACCGTTAAGCAATTAAAAGAAGATTATTTCAAAAAAATAGAATGTTTTGATAGTGTTGAAATTTCAGGAGTTGAAGATAGATTTAATGCTTCATTAGGTACCTACCATGATTTGCTAAAAATTATTAAAGATAAAGATTTTTTGGATAATGAAGAAAATGAAGATATCTTAGAGGATATTGTTTTAACATTGACCTTATTTGAAGATAGGGAGATGATTGAGGAAAGACTTAAAACATATGCTCACCTCTTTGATGATAAGGTGATGAAACAGCTTAAACGTCGCCGTTATACTGGTTGGGGACGTTTGTCTCGAAAATTGATTAATGGTATTAGGGATAAGCAATCTGGCAAAACAATATTAGATTTTTTGAAATCAGATGGTTTTGCCAATCGCAATTTTATGCAGCTGATCCATGATGATAGTTTGACATTTAAAGAAGACATTCAAAAAGCACAAGTGTCTGGACAAGGCGATAGTTTACATGAACATATTGCAAATTTAGCTGGTAGCCCTGCTATTAAAAAAGGTATTTTACAGACTGTAAAAGTTGTTGATGAATTGGTCAAAGTAATGGGGCGGCATAAGCCAGAAAATATCGTTATTGAAATGGCACGTGAAAATCAGACAACTCAAAAGGGCCAGAAAAATTCGCGAGAGCGTATGAAACGAATCGAAGAAGGTATCAAAGAATTAGGAAGTCAGATTCTTAAAGAGCATCCTGTTGAAAATACTCAATTGCAAAATGAAAAGCTCTATCTCTATTATCTCCAAAATGGAAGAGACATGTATGTGGACCAAGAATTAGATATTAATCGTTTAAGTGATTATGATGTCGATGCCATTGTTCCACAAAGTTTCCTTAAAGACGATTCAATAGACAATAAGGTCTTAACGCGTTCTGATAAAAATCGTGGTAAATCGGATAACGTTCCAAGTGAAGAAGTAGTCAAAAAGATGAAAAACTATTGGAGACAACTTCTAAACGCCAAGTTAATCACTCAACGTAAGTTTGATAATTTAACGAAAGCTGAACGTGGAGGTTTGAGTGAACTTGATAAAGCTGGTTTTATCAAACGCCAATTGGTTGAAACTCGCCAAATCACTAAGCATGTGGCACAAATTTTGGATAGTCGCATGAATACTAAATACGATGAAAATGATAAACTTATTCGAGAGGTTAAAGTGATTACCTTAAAATCTAAATTAGTTTCTGACTTCCGAAAAGATTTCCAATTCTATAAAGTACGTGAGATTAACAATTACCATCATGCCCATGATGCGTATCTAAATGCCGTCGTTGGAACTGCTTTGATTAAGAAATATCCAAAACTTGAATCGGAGTTTGTCTATGGTGATTATAAAGTTTATGATGTTCGTAAAATGATTGCTAAGTCTGAGCAAGAAATAGGCAAAGCAACCGCAAAATATTTCTTTTACTCTAATATCATGAACTTCTTCAAAACAGAAATTACACTTGCAAATGGAGAGATTCGCAAACGCCCTCTAATCGAAACTAATGGGGAAACTGGAGAAATTGTCTGGGATAAAGGGCGAGATTTTGCCACAGTGCGCAAAGTATTGTCCATGCCCCAAGTCAATATTGTCAAGAAAACAGAAGTACAGACAGGCGGATTCTCCAAGGAGTCAATTTTACCAAAAAGAAATTCGGACAAGCTTATTGCTCGTAAAAAAGACTGGGATCCAAAAAAATATGGTGGTTTTGATAGTCCAACGGTAGCTTATTCAGTCCTAGTGGTTGCTAAGGTGGAAAAAGGGAAATCGAAGAAGTTAAAATCCGTTAAAGAGTTACTAGGGATCACAATTATGGAAAGAAGTTCCTTTGAAAAAAATCCGATTGACTTTTTAGAAGCTAAAGGATATAAGGAAGTTAAAAAAGACTTAATCATTAAACTACCTAAATATAGTCTTTTTGAGTTAGAAAACGGTCGTAAACGGATGCTGGCTAGTGCCGGAGAATTACAAAAAGGAAATGAGCTGGCTCTGCCAAGCAAATATGTGAATTTTTTATATTTAGCTAGTCATTATGAAAAGTTGAAGGGTAGTCCAGAAGATAACGAACAAAAACAATTGTTTGTGGAGCAGCATAAGCATTATTTAGATGAGATTATTGAGCAAATCAGTGAATTTTCTAAGCGTGTTATTTTAGCAGATGCCAATTTAGATAAAGTTCTTAGTGCATATAACAAACATAGAGACAAACCAATACGTGAACAAGCAGAAAATATTATTCATTTATTTACGTTGACGAATCTTGGAGCTCCCGCTGCTTTTAAATATTTTGATACAACAATTGATCGTAAACGATATACGTCTACAAAAGAAGTTTTAGATGCCACTCTTATCCATCAATCCATCACTGGTCTTTATGAAACACGCATTGATTTGAGTCAGCTAGGAGGTGACTAACTCGA', DNAAlphabet())
 
-#First base of cas9 (A of ATG) is base 24 (1 indexed)
+# First base of cas9 (A of ATG) is base 24 (1 indexed)
 orf_start = 24
 
-#Inserting transposon pre-cloned with domain of interest, no linker variation
+# Inserting transposon pre-cloned with domain of interest, no linker variation
 trans_pdz = Seq('TGCATCTCAACGTCGGCGTGTGACGGTGCGCAAGGCCGACGCCGGCGGGCTGGGCATCAGCATCAAGGGGGGCCGGGAAAACAAGATGCCTATTCTCATTTCCAAAATCTTCAAGGGACTGGCAGCAGACCAGACGGAGGCCCTTTTTGTTGGGGATGCCATCCTGTCTGTGAATGGTGAAGATTTGTCCTCTGCCACCCACGATGAAGCGGTACAGGCCCTCAAGAAGACAGGCAAGGAGGTCGTGCTCGAAGTTAAGTACATGGCGTCA', DNAAlphabet())
+pdz_len = len(trans_pdz)
 
 
-def transposition(target, target_orf_start, insert):
-    """produces the sequence object from a transposition of an insert sequence into a LINEAR target sequence with a specific ORF start site
-    output includes site of transposon insertion, relative to ORF numbering
-    output transposon insertion site is defined by 3' most base of target ORF before 5' end of transposon (one-based indexing)
-    """
-    #random insert position within target sequence
-    insert_site = randrange(0, len(target)-5+1)
-    insert = trans_pdz
-    # 50% of inserts are reverse
-    if random() > 0.5:
-        insert = insert.reverse_complement()
-    #new sequence with insert tranposed and 5bp repeat created and ORF insert site calculated
-    output = [target[:insert_site+5] + insert + target[insert_site:], insert_site + 5 - (target_orf_start-1)]
-    return output
-
-def seq_shear(seq_sample):
-    """Produces a random 100bp fragment of a LINEAR input sample sequence"""
-    shear_start = randrange(0, len(seq_sample)-100+1)
-    output_seq = seq_sample[shear_start:shear_start+100]
-    # 50% of reads are on the minus strand.
-    if random() > 0.5:
-        output_seq = output_seq.reverse_complement()
-    return output_seq
-
-filename = 'test_cas9_transpos_reads.fasta'
-x = 0
-
-with open(filename, 'w') as fh:
-    records = []
-    for construct_num in xrange(c):
-        construct, insertion_site = transposition(target_cas9, orf_start, trans_pdz)
-        for read_num in xrange(r): 
-            read = seq_shear(construct)
-            construct_id = "@C%06dR%04dINSPS%04d\n" % (construct_num, read_num, insertion_site)
-            desc_dict = {"insertion_site": insertion_site, "construct_num": construct_num,
-                         "read_num": read_num}
-            construct_desc = json.dumps(desc_dict)
-            records.append(SeqRecord(read, id=construct_id, name=construct_id, description=construct_desc))
-            x += 1
-            if x % 1000000 == 0:
-                print "Created %d reads" % x
-                
-    writer = FastaIO.FastaWriter(fh)
-    writer.write_file(records)
+class Fragment(object):
     
+    def __init__(self, id_num, trans, frag_start, frag_end, forward):
+        self.id = id_num
+        self.trans = trans # Transposition from which derived.
+        self.start = frag_start
+        self.end = frag_end
+        
+        self.seq = trans.construct[frag_start:frag_end] # Fragment sequence
+        self.forward = forward
+        if not self.forward:
+            self.seq = self.seq.reverse_complement()
+        
+        inlen = trans.insert_len
+        ins = trans.insertion_site
+        extbp = 20
+        efs = frag_start + extbp
+        efe = frag_end - extbp
+        
+        should_match_5p = efs <= ins <= efe
+        should_match_3p = efs  <= ins + inlen <= efe
+        self.should_match = (should_match_3p or should_match_5p)
+        id_tuple = (self.trans.id, self.id, self.trans.insertion_site)
+        self.id_str = "@C%06dR%04dINSPS%04d\n" % id_tuple
+        self.info_dict = {"insertion_site": self.trans.expected_insertion_site,
+                          "construct_num": self.trans.id,
+                          "read_num": self.id,
+                          "should_match": self.should_match}
+
+
+class Transposition(object):
+    
+    def __init__(self, id_num, insert_seq, target_seq, target_orf_start):
+        self.id = id_num
+        self.insert = insert_seq
+        self.insert_len = len(insert_seq)
+        self.target = target_seq
+        self.orf_start = target_orf_start
+        self.forward_insertion = True
+        
+        # Random insert position within target sequence
+        insert = self.insert
+        target = self.target
+        # Insert site relative to start of backbone sequence, not start codon.
+        self.insertion_site = randrange(0, len(self.target)-5+1)
+        
+        # 50% of inserts are reverse
+        if random() > 0.5:
+            insert = insert.reverse_complement()
+            self.forward_insertion = False
+            
+        # New sequence with insert tranposed and 5bp repeat created and ORF insert site calculated
+        ins = self.insertion_site
+        self.construct = target[:ins+5] + insert + target[ins:]
+        # Expected insertion site 5' most base of insert sequence relative to start codon.
+        self.expected_insertion_site = ins + 5 - (target_orf_start-1)
+    
+    def Shear(self, frag_id, fragment_length=100):
+        shear_start = randrange(0, len(self.construct)-fragment_length+1)
+        shear_end = shear_start + fragment_length
+        fwd = random() <= 0.5
+        return Fragment(frag_id, self, shear_start, shear_end, fwd)
+
+
+def Main():
+    filename = 'test_cas9_transpos_reads.fasta'
+    x = 0
+    
+    with open(filename, 'w') as fh:
+        records = []
+        for construct_num in xrange(c):
+            trans = Transposition(construct_num, trans_pdz, target_cas9, orf_start)
+            for read_num in xrange(r): 
+                frag = trans.Shear(read_num, 100)
+                construct_desc = json.dumps(frag.info_dict)
+                records.append(SeqRecord(frag.seq, id=frag.id_str,
+                                         name=frag.id_str,
+                                         description=construct_desc))
+                x += 1
+                if x % 1000000 == 0:
+                    print "Created %d reads" % x
+                    
+        writer = FastaIO.FastaWriter(fh)
+        writer.write_file(records)
+
+
+if __name__ == '__main__':
+    Main()
