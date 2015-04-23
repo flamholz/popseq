@@ -1,15 +1,28 @@
 # -*- coding: utf-8 -*-
 # <nbformat>2</nbformat>
 
-from Bio import SearchIO
 from Bio import Seq
-from Bio import SeqIO
 
 DEFAULT_FIXED_5P_SEQ = Seq.Seq('TGCATC')
 DEFAULT_FIXED_3P_SEQ = Seq.Seq('GCGTCA')
 
 
 class ReadAlignmentData(object):
+    """Contains alignments of a transposon mutagenesis library.
+    
+    Class performs all DNA math required to locate the site at which
+    a transposon inserted a DNA sequence (the insert) into a backbone
+    sequence. This particular class is designed to do the math for the 
+    case where the inserts 5' and 3' ends are not reverse complements
+    of each other. 
+    
+    Class assumes that the read matches both insert and backbone. This 
+    will not be the case for all reads. Therefore, Builder subclass can
+    be used to accumulate read-specific data before it is clear whether
+    the read matched both insert and backbone (i.e. while reading files).
+    
+    TODO: rename this class appropriate to its function.
+    """ 
     
     class Builder(object):
         """Builder for ReadAlignmentData.
