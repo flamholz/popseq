@@ -4,6 +4,7 @@ import unittest
 import glob
 import numpy as np
 import json
+import pylab
 
 from Bio import SeqIO
 from sequtils import read_alignment_data as rad
@@ -63,15 +64,29 @@ class ReadAligmentDataTest(unittest.TestCase):
                 if read_info["should_match"]:
                     should_match_ids.add(record.id)
         
-        
         should_did = should_match_ids.intersection(did_match_ids)
+        n_did_match = len(did_match_ids)
         n_found = len(should_did)
         n_expected = len(should_match_ids)
-        frac_found = float(n_found) / float(n_expected)
-        print 'Found %d of %d (%.2f%%)' % (n_found, n_expected, 100*frac_found)
-        self.assertGreater(frac_found, 0.95)
-        
-            
+        recall = float(n_found) / float(n_expected)
+        precision = float(n_found) / float(n_did_match)
+        print 'precision: %.2f' % precision
+        print 'recall: %.2f' % recall
+        print 'total expected: %d' % n_expected
+        print 'total found: %d' % n_did_match
+        print 'num expected found: %d' % n_found
+        self.assertGreater(precision, 0.85)
+        self.assertGreater(recall, 0.85)
+    
+    def testEndCorrelation(self):
+        matches = np.zeros((4200, 2))
+        for read_id, rd in self.READ_DATA.iteritems():
+            idx = rd.insertion_site
+            col = 0 if rd.insert_match_end == '5p' else 1
+            matches[idx,col] += 1
+        corr = np.corrcoef(matches[:,0], matches[:,1])[1,0]
+        # Reads at ends should correlate well even with random noise and low total read count.
+        self.assertGreater(corr, 0.8)    
 
 if __name__ == '__main__':
     unittest.main()
