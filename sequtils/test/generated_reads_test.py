@@ -45,6 +45,7 @@ class ReadAligmentDataTest(unittest.TestCase):
             read_info = self._parseReadInfo(rd.read_record)
             insertion_site = read_info["insertion_site"]
             self.assertEquals(insertion_site, rd.insertion_site)
+            self.assertEquals(0, rd.linker_length, msg='generated reads have no linkers')
             self.assertTrue('read_id' in rd.AsDict())
             matches_expected += read_info["should_match"]
         frac_expected = float(matches_expected) / float(total_matches)
