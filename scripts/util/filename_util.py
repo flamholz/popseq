@@ -19,9 +19,9 @@ def CheckAllExist(paths):
 		assert path.exists(fname), '%s does not exist!' % fname
 
 
-def _MakeFname(in_fname, out_ext,
-			   dest_dir=None,
-			   postfix=None):
+def MakeFname(in_fname, out_ext,
+			  dest_dir=None,
+			  postfix=None):
 	"""Helper to make a new filename from an existing one.
 
 	Args:
@@ -56,9 +56,9 @@ def MakeFASTAFilename(in_fname,
 	Returns:
 		The FASTA filename.
 	"""
-	return _MakeFname(in_fname, out_ext='fa',
-					  dest_dir=dest_dir,
-					  postfix=postfix)
+	return MakeFname(in_fname, out_ext='fa',
+					 dest_dir=dest_dir,
+					 postfix=postfix)
 
 
 def MakePSLFilename(fasta_path,
@@ -74,7 +74,7 @@ def MakePSLFilename(fasta_path,
 	Returns:
 		The PSL filename.
 	"""
-	return _MakeFname(fasta_path, out_ext=out_ext,
-					  dest_dir=dest_dir,
-					  postfix=postfix)
+	return MakeFname(fasta_path, out_ext=out_ext,
+					 dest_dir=dest_dir,
+					 postfix=postfix)
 
