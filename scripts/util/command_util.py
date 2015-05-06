@@ -15,14 +15,15 @@ def ToFASTACommand(fastq_path, fasta_path, keep_degenerate=True):
 
 
 def BLATCommand(db_fname, query_fname, output_fname,
-				tile_size, step_size, min_score, max_gap,
-				one_off, rep_match, output_type='pslx'):
+				tile_size, step_size, min_score, min_match,
+				max_gap, one_off, rep_match, output_type='pslx'):
 	"""Returns a shell to BLAT search with."""
 	command = ['blat', db_fname, query_fname, output_fname,
 			   '-q=dna', '-t=dna',  # DB and query are DNA
 			   '-tileSize=%d' % tile_size,
 			   '-stepSize=%d' % step_size,
 			   '-minScore=%d' % min_score,
+			   '-minMatch=%d' % min_match,
 			   '-maxGap=%d' % max_gap,
 			   '-oneOff=%d' % one_off,
 			   '-repMatch=%d' % rep_match,
