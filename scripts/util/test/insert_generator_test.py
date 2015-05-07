@@ -19,9 +19,11 @@ class AmbiguousSeqTest(unittest.TestCase):
         expected = self.FIXED_5P + self.INSERT_SEQ + self.FIXED_3P
         expected_str = str(expected)
         for _ in xrange(50):
-            generated = gen.next()
+            generated, linker_5p, linker_3p = gen.next()
             # Need to compare as strings b/c metadata not equal.
             self.assertEquals(expected_str, str(generated))
+            self.assertEquals('', str(linker_5p))
+            self.assertEquals('', str(linker_3p))
             
     def testLinker(self):
         linker_seq = 'BCT'
@@ -33,7 +35,7 @@ class AmbiguousSeqTest(unittest.TestCase):
         fixed_3p_str = str(self.FIXED_3P)
         
         for _ in xrange(50):
-            generated = gen.next()
+            generated, linker_5p, linker_3p = gen.next()
             generated_str = str(generated)
             
             self.assertTrue(generated_str.startswith(fixed_5p_str))
@@ -50,6 +52,8 @@ class AmbiguousSeqTest(unittest.TestCase):
             # Linkers should have integer number of codons
             self.assertEquals(linker_5p_nt % 3, 0)
             self.assertEquals(linker_3p_nt % 3, 0)
+            self.assertEquals(len(linker_5p), linker_5p_nt)
+            self.assertEquals(len(linker_3p), linker_3p_nt)
             
 
 if __name__ == '__main__':

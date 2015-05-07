@@ -20,4 +20,6 @@ class InsertGenerator(object):
             linker_5p = self.linker_gen.Generate(n=linker_len_5p)
             linker_3p = self.linker_gen.Generate(n=linker_len_3p)
         
-        return self.fixed_5p + linker_5p + self.insert_seq + linker_3p + self.fixed_3p
+        output_seq = self.fixed_5p + linker_5p + self.insert_seq + linker_3p + self.fixed_3p
+        
+        return output_seq, linker_5p, linker_3p
