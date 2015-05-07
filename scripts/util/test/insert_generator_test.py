@@ -4,7 +4,6 @@ import unittest
 
 from Bio.Alphabet import DNAAlphabet
 from Bio.Seq import Seq
-from Bio import pairwise2
 from scripts.util.insert_generator import InsertGenerator
 from scripts.util.ambiguous_seq import AmbiguousSequenceGenerator
 
