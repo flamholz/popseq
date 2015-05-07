@@ -55,6 +55,8 @@ def Main():
                         help="Step size to use for BLAT search.")
     parser.add_argument("--blat_min_score", type=int, default=15,
                         help="Minimum score to retain a BLAT match.")
+    parser.add_argument("--blat_min_match", type=int, default=2,
+                        help="Minimum number of BLAT tiles to trigger matching.")
     parser.add_argument("--blat_max_gap", type=int, default=0,
                         help="Blat maximum number of gaps between tiles.")
     parser.add_argument("--blat_one_off", type=int, default=0,
@@ -126,6 +128,9 @@ def Main():
         blat_tile_size=args.blat_tile_size,
         blat_step_size=args.blat_step_size,
         blat_min_score=args.blat_min_score,
+        blat_min_match=args.blat_min_match,
+        blat_one_off=args.blat_one_off,
+        blat_rep_match=args.blat_rep_match,
         blat_max_gap=args.blat_max_gap,
         output_type='pslx')
     align_duration = time.time() - start_align_ts
@@ -140,6 +145,9 @@ def Main():
         blat_tile_size=args.blat_tile_size,
         blat_step_size=args.blat_step_size,
         blat_min_score=args.blat_min_score,
+        blat_min_match=args.blat_min_match,
+        blat_one_off=args.blat_one_off,
+        blat_rep_match=args.blat_rep_match,
         blat_max_gap=args.blat_max_gap,
         output_type='pslx')
     align_duration = time.time() - start_align_ts
