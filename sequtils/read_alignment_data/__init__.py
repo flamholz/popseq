@@ -31,28 +31,26 @@ class ReadAlignmentData(object):
         analysis. Allows construction of ReadAlignmentData objects only once
         all data available.
         """
-        def __init__(self, read_id, backbone_start_offset,
-                     fixed_5p_seq=DEFAULT_FIXED_5P_SEQ,
-                     fixed_3p_seq=DEFAULT_FIXED_3P_SEQ):
-            self.read_id = read_id
-            self.read_record = None
-            self.backbone_hsp = None
-            self.insert_hsp = None
+        def __init__(self, backbone_start_offset,
+                     fixed_seq, fixed_seq_orientation, fixed_seq_end,
+                     read_record=None, backbone_alignment=None):
+            # These values may be set after construction.
+            self.read_record = read_record
+            self.backbone_alignment = backbone_alignment
         
-            self._start_offset = backbone_start_offset
-            self._fixed_5p_seq = fixed_5p_seq
-            self._fixed_3p_seq = fixed_3p_seq
-        
-        def HasInsertAndBackboneHSPs(self):
-            return (self.insert_hsp is not None and
-                    self.backbone_hsp is not None)
-        
+            self.start_offset = backbone_start_offset
+            self.fixed_seq = fixed_seq
+            self.fixed_seq_end = fixed_seq_end
+            self.fixed_seq_orientation = fixed_seq_orientation
+
         def Complete(self):
             """Has all required data."""
-            return (self.read_id and
-                    self.read_record and 
-                    self.insert_hsp and
-                    self.backbone_hsp)
+            return (self.read_record and 
+                    self.backbone_alignment and 
+                    self.start_offset and 
+                    self.fixed_seq and 
+                    self.fixed_seq_end and
+                    self.fixed_seq_orientation)
         
         def Build(self):
             """Build a ReadAlignmentData object.
@@ -60,19 +58,19 @@ class ReadAlignmentData(object):
             Returns an instance of ReadAlignmentData from accumulated data.
             """
             assert self.Complete()
-            rd = ReadAlignmentData(self.read_id, self.read_record,
-                                   self.insert_hsp, self.backbone_hsp, self._start_offset,
-                                   self._fixed_5p_seq, self._fixed_3p_seq)
-            return rd
+            rad = ReadAlignmentData(
+                self.read_record,
+                self.backbone_alignment,
+                self.start_offset,
+                self.fixed_seq,
+                self.fixed_seq_orientation,
+                self.fixed_seq_end)
+            return rad
     
-    def __init__(self,
-                 read_id,
-                 read_record,
-                 insert_hsp,
-                 backbone_hsp,
+    def __init__(self, read_record,
+                 backbone_alignment,
                  backbone_start_offset,
-                 fixed_5p_seq=DEFAULT_FIXED_5P_SEQ,
-                 fixed_3p_seq=DEFAULT_FIXED_3P_SEQ):
+                 fixed_seq, fixed_seq_orientation, fixed_seq_end):
         """Object encapsulating variant calling from reads.
         
         TODO: rework all this. Very strange pattern we are using here. 
@@ -85,14 +83,23 @@ class ReadAlignmentData(object):
             fixed_5p_seq: fixed sequence verifying 5' end.
             fixed_3p_seq: fixed sequence verifying 3' end.
         """
-        self.read_id = read_id
-        self._fixed_5p_seq = fixed_5p_seq
-        self._fixed_3p_seq = fixed_3p_seq
-        self._read_record = read_record
-        self._backbone_hsp = backbone_hsp
-        self._insert_hsp = insert_hsp
-        self._start_offset = backbone_start_offset
+        self.backbone_alignment = backbone_alignment
+        self.read_record = read_record
+        self.start_offset = backbone_start_offset
+        self.fixed_seq = fixed_seq
+        self.fixed_seq_end = fixed_seq_end
+        self.fixed_seq_orientation = fixed_seq_orientation
         
+        self.tn_bp_duplicated = 5
+        
+        self.insertion_index = None
+        self.insertion_site = None
+        self.linker_length = None
+        self.linker_seq = None
+        
+        # Calculate insertion parameters on construction!
+        self._CalculateInsertion()
+        """
         # Fetch some data right out of the HSPs
         self._insert_match_strand = insert_hsp.fragments[0].query_strand
         self._insert_match_end = '3p' if insert_hsp.hit_id.endswith('_3p') else '5p'
@@ -127,15 +134,20 @@ class ReadAlignmentData(object):
         # If set, the sequence of the linker between the fixed
         # sequence and the 
         self._linker_seq = None
-        
-        # Calculate insertion parameters on construction!
-        self._CalculateInsertion()
-    
+        """
+    """
     DICT_FIELDNAMES = ['read_id', 'forward_insertion',
                        'insert_match_end', 'insert_match_strand',
                        'backbone_match_strand', 'fixed_seq_start', 'fixed_seq_end',
                        'insertion_site', 'linker_length', 'linker_seq', 'insertion_in_frame']
+    """
+    DICT_FIELDNAMES = ['read_id', 'insertion_index', 'insertion_site']
+    
     def AsDict(self):
+        return {'read_id': self.read_record.id,
+                'insertion_index': self.insertion_index,
+                'insertion_site': self.insertion_site}
+        """
         return {'read_id': self.read_id,
                 'forward_insertion': self.has_forward_insertion,
                 'insert_match_end': self.insert_match_end,
@@ -147,7 +159,7 @@ class ReadAlignmentData(object):
                 'linker_length': self.linker_length,
                 'linker_seq': self.linker_seq,
                 'insertion_in_frame': self.insertion_in_frame}
-    
+        """
     def PrettyPrint(self):
         """Prints the read data nicely to the commandline."""
         read_seq = str(self.read_record.seq)
@@ -217,6 +229,42 @@ class ReadAlignmentData(object):
         
     def _CalculateInsertion(self):
         """Calculates the position of the insertion in the backbone."""
+        # Shorthand
+        bbone_al = self.backbone_alignment
+        bp_dup = self.tn_bp_duplicated
+        
+        # Position of insertion in nt sequence of target
+        # not adjusted for start codon
+        insertion_index = None
+        if self.fixed_seq_end == '5p':
+            if self.fixed_seq_orientation > 0:
+                # Matched forward complement of 5' fixed sequence
+                insertion_index = bbone_al.reference_end
+                if self.backbone_alignment.is_reverse:
+                    insertion_index = bbone_al.reference_start + bp_dup
+            else:
+                # Matched reverse complement of 5' fixed sequence
+                insertion_index = bbone_al.reference_start + bp_dup
+                if self.backbone_alignment.is_reverse:
+                    insertion_index = bbone_al.reference_end
+        elif self.fixed_seq_end == '3p':
+            if self.fixed_seq_orientation > 0:
+                # Matched forward complement of 5' fixed sequence
+                insertion_index = bbone_al.reference_start + bp_dup
+                if self.backbone_alignment.is_reverse:
+                    insertion_index = bbone_al.reference_end
+            else:
+                # Matched reverse complement of 5' fixed sequence
+                insertion_index = bbone_al.reference_end
+                if self.backbone_alignment.is_reverse:
+                    insertion_index = bbone_al.reference_start + bp_dup
+        else:
+            raise ValueError('Illegal value for fixed end %s' % self.fixed_end)
+        
+        self.insertion_index = insertion_index
+        self.insertion_site = insertion_index - self.start_offset
+        
+        """
         self._has_insert_backbone_matches = self.HasBothHSPs()
         self._has_insertion = self.HasBothHSPs()
         self._has_forward_insertion = self.ConsistentInsertAndBackboneMatches()
@@ -317,29 +365,15 @@ class ReadAlignmentData(object):
         
         # NOTE: +5 bp on the 3' end of the insert b/c of the
         # 5 bp duplicated by the transposase
-    
-    @property
-    def read_record(self):
-        return self._read_record
-    @property
-    def backbone_hsp(self):
-        return self._backbone_hsp
-    @property
-    def insert_hsp(self):
-        return self._insert_hsp
+        """
     
     read_seq = property(lambda self: self._read_record.seq)
-    linker_seq = property(lambda self: self._linker_seq)
-    linker_len = property(lambda self: len(self._linker_seq))
     has_insert_backbone_matches = property(lambda self: self._has_insert_backbone_matches)
     has_forward_insertion = property(lambda self: self._has_forward_insertion)
     has_insertion = property(lambda self: self._has_insertion)
-    insertion_site = property(lambda self: self._insertion_site)
     insertion_in_frame = property(lambda self: self._insertion_in_frame)
-    linker_length = property(lambda self: self._linker_length)
     insert_match_end = property(lambda self: self._insert_match_end)
     insert_match_strand = property(lambda self: self._insert_match_strand)
     backbone_match_strand = property(lambda self: self._backbone_match_strand)
     fixed_start = property(lambda self: self._fixed_start)
     fixed_end = property(lambda self: self._fixed_end)
-    fixed_seq = property(lambda self: self._fixed_seq)
