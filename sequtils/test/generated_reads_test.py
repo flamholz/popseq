@@ -1,12 +1,21 @@
 #!/usr/bin/python
 
 import unittest
+<<<<<<< HEAD
 import json
 import pandas as pd
 import pylab
 
 from Bio import SeqIO
 from Bio.SeqIO import FastaIO
+=======
+import glob
+import numpy as np
+import json
+import pylab
+
+from Bio import SeqIO
+>>>>>>> 5b8ee12b612564e3cc56a1d82280a479a6f0342a
 from sequtils import read_alignment_data as rad
 from sequtils.read_alignment_data import factory
 
@@ -50,20 +59,28 @@ class ReadAligmentDataTest(unittest.TestCase):
             matches_expected += read_info["should_match"]
         frac_expected = float(matches_expected) / float(total_matches)
         print 'Expected %d of %d (%.2f%%)' % (matches_expected, total_matches, 100*frac_expected)
+<<<<<<< HEAD
         #self.assertGreater(frac_expected, 0.6)
+=======
+        self.assertGreater(frac_expected, 0.6)
+>>>>>>> 5b8ee12b612564e3cc56a1d82280a479a6f0342a
     
     def testCoverage(self):
         should_match_ids = set()
         did_match_ids = set()
+<<<<<<< HEAD
         not_found_sites = []
         ofh = open('false_negative_reads.fa', 'w')
         d_by_construct = {}
         writer = FastaIO.FastaWriter(ofh)
         writer.write_header()
+=======
+>>>>>>> 5b8ee12b612564e3cc56a1d82280a479a6f0342a
         with open(self.READS_FASTA) as f:
             reader = SeqIO.parse(f, 'fasta')
             for record in reader:
                 read_info = self._parseReadInfo(record)
+<<<<<<< HEAD
                 cnum = read_info["construct_num"]
                 d = d_by_construct.setdefault(cnum, read_info)
                 found_match = (record.id in self.READ_DATA)
@@ -77,15 +94,21 @@ class ReadAligmentDataTest(unittest.TestCase):
                 d['true_neg'] = d.get('true_neg', 0) + true_neg
                 d['false_neg'] = d.get('false_neg', 0) + false_neg
                 
+=======
+                found_match = (record.id in self.READ_DATA)
+>>>>>>> 5b8ee12b612564e3cc56a1d82280a479a6f0342a
                 if found_match:
                     did_match_ids.add(record.id)
                 if read_info["should_match"]:
                     should_match_ids.add(record.id)
+<<<<<<< HEAD
                     if not found_match:
                         not_found_sites.append(read_info["insertion_site"])
                         writer.write_record(record)
         writer.write_footer()
         ofh.close()
+=======
+>>>>>>> 5b8ee12b612564e3cc56a1d82280a479a6f0342a
         
         should_did = should_match_ids.intersection(did_match_ids)
         n_did_match = len(did_match_ids)
@@ -98,6 +121,7 @@ class ReadAligmentDataTest(unittest.TestCase):
         print 'total expected: %d' % n_expected
         print 'total found: %d' % n_did_match
         print 'num expected found: %d' % n_found
+<<<<<<< HEAD
         #self.assertGreater(precision, 0.85)
         #self.assertGreater(recall, 0.85)
         
@@ -107,6 +131,20 @@ class ReadAligmentDataTest(unittest.TestCase):
         pylab.figure()
         pylab.hist(not_found_sites, bins=200)
         pylab.show()
+=======
+        self.assertGreater(precision, 0.85)
+        self.assertGreater(recall, 0.85)
+    
+    def testEndCorrelation(self):
+        matches = np.zeros((4200, 2))
+        for read_id, rd in self.READ_DATA.iteritems():
+            idx = rd.insertion_site
+            col = 0 if rd.insert_match_end == '5p' else 1
+            matches[idx,col] += 1
+        corr = np.corrcoef(matches[:,0], matches[:,1])[1,0]
+        # Reads at ends should correlate well even with random noise and low total read count.
+        self.assertGreater(corr, 0.8)    
+>>>>>>> 5b8ee12b612564e3cc56a1d82280a479a6f0342a
 
 if __name__ == '__main__':
     unittest.main()
