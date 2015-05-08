@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import json
 
 from Bio.Alphabet import DNAAlphabet
 from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 from Bio.SeqIO import FastaIO
-from scripts.util.insert_generator import InsertGenerator
-from scripts.util.ambiguous_seq import AmbiguousSequenceGenerator
-from scripts.util.synthetic_transposon import Transposition
+from sequtils.insert_generator import InsertGenerator
+from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.synthetic_transposon import Transposition
 
 # TODO: set these sequences from FASTA files.
 # Target DNA region containing gene of iterest
