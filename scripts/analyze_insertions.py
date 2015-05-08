@@ -1,26 +1,17 @@
 #!/usr/bin/python
 
 import argparse
-import csv
-import json
+import itertools
 import os
-import pysam
 import subprocess
 import time
+import sequtils.read_alignment_data.factory as rad_factory
 
-from Bio import SeqIO
 from Bio.Seq import Seq
 from os import path
 from scripts.util.filename_util import MakeFname
 from scripts.util import command_util
 
-
-def _parseReadInfo(read_desc):
-    """Parses JSON encoded info stashed in read description."""
-    desc = read_desc
-    dict_start = desc.find('{')
-    desc = desc[dict_start:]
-    return json.loads(desc)
 
 def ReadID(read_info):
     construct_num = read_info["cn"]
@@ -40,6 +31,7 @@ def BBDukRetain(ref_fname, in_fname, out_fname, k):
                'k=%d' % k,
                'hdist=1',
                'mm=f']
+    print 'Running: \n\t%s' % ' '.join(command)
     ret = subprocess.call(command)
     assert ret == 0, 'bbduk.sh failed for %s!' % in_fname
 
@@ -176,6 +168,7 @@ def Main():
     parser.add_argument("--fixed_3p",
                         default="GCGTCA",
                         help="Fixed sequence found on 3' end of insert.")
+    parser.set_defaults(summary_output=True)
     args = parser.parse_args()
     
     start_ts = time.time()
@@ -276,6 +269,41 @@ def Main():
     reads_by_id = {}
     matching_ids = set()
     
+    
+    # TODO: each of these calls to the factory is reading the same masked reads
+    # again. If this is slow, should refactor into a container for the reads.
+    # Otherwise, ignore. 
+    forward = 1
+    reverse = -1
+    factory = rad_factory.ReadAlignmentDataFactory(
+        args.start_offset, fixed_5p, '5p', forward)
+    read_data_5p = factory.DictFromFileLists(
+        filtered_masked_fnames, aligned_5p_fnames_bam)
+    
+    factory = rad_factory.ReadAlignmentDataFactory(
+        args.start_offset, fixed_3p, '3p', forward)
+    read_data_3p = factory.DictFromFileLists(
+        filtered_masked_fnames, aligned_3p_fnames_bam)
+    
+    factory = rad_factory.ReadAlignmentDataFactory(
+        args.start_offset, fixed_5p, '5p', reverse)
+    read_data_5p_rev = factory.DictFromFileLists(
+        filtered_masked_fnames, aligned_5p_rev_fnames_bam)
+    
+    factory = rad_factory.ReadAlignmentDataFactory(
+        args.start_offset, fixed_3p, '3p', reverse)
+    read_data_3p_rev = factory.DictFromFileLists(
+        filtered_masked_fnames, aligned_3p_rev_fnames_bam)
+    
+    out_fname = args.output_fname
+    print 'Writing output to', out_fname
+    all_matched_reads = itertools.chain(read_data_5p.itervalues(),
+                                        read_data_3p.itervalues(),
+                                        read_data_5p_rev.itervalues(),
+                                        read_data_3p_rev.itervalues())
+    factory.WriteCSVFilename(all_matched_reads, out_fname)
+    
+    """
     for bam_fname in aligned_5p_fnames_bam:
         alignedf = pysam.AlignmentFile(bam_fname, 'rb')
         aligned = alignedf.fetch()
@@ -283,7 +311,7 @@ def Main():
             match_3p_end = it.reference_end
             if it.is_reverse:
                 match_3p_end = it.reference_start + args.tn_bp_duplicated
-            
+        
             insertion_idx = match_3p_end
             insertion_site = insertion_idx - args.start_offset
             try:
@@ -408,9 +436,10 @@ def Main():
         writer = csv.DictWriter(outf, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(reads_by_id.itervalues())
-    
+    """
     duration = time.time() - start_ts
     print 'Running time: %.2f minutes' % (duration/60.0)
+    
     
 if __name__ == '__main__':
     Main()

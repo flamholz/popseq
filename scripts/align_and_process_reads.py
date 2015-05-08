@@ -18,7 +18,6 @@ Requirements:
 """
 
 import argparse
-import csv
 import os
 import time
 import numpy as np
