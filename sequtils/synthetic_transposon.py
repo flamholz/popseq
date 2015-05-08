@@ -37,6 +37,8 @@ class Fragment(object):
         id_tuple = (self.trans.id, self.id, self.trans.insertion_site)
         self.id_str = "C%06dR%04dINSPS%04d\n" % id_tuple
         
+        # Longer names leads to a longer JSON string that gets mangled
+        # by the aligner for some reason...
         self.info_dict = {
             # Site of insertion into coding sequence, NT units
             "ins": self.trans.expected_insertion_site,

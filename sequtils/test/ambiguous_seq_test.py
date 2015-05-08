@@ -3,7 +3,7 @@
 import unittest
 
 from Bio.Data import IUPACData
-from scripts.util.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
 
 
 class AmbiguousSeqTest(unittest.TestCase):                                         

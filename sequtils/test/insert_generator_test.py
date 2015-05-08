@@ -4,8 +4,8 @@ import unittest
 
 from Bio.Alphabet import DNAAlphabet
 from Bio.Seq import Seq
-from scripts.util.insert_generator import InsertGenerator
-from scripts.util.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.insert_generator import InsertGenerator
+from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
 
 
 class AmbiguousSeqTest(unittest.TestCase):
