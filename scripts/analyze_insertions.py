@@ -11,6 +11,7 @@ from Bio.Seq import Seq
 from os import path
 from scripts.util.filename_util import MakeFname
 from scripts.util import command_util
+from sequtils.transposition_params import TranspositionParams
 
 
 def ReadID(read_info):
@@ -147,6 +148,8 @@ def Main():
     parser.add_argument("-i", "--insert_db_filename", required=True,
                         help=("Path to FASTA file containing insert ends to align reads to. "
                               "Will only retain reads that align well to this DB."))
+    parser.add_argument("--insert_seq_filename", required=True,
+                        help=("Path to FASTA file containing insert sequence"))
     parser.add_argument("-b", "--backbone_db_filename", required=True,
                         help=("Path to FASTA file containing backbone sequence. "
                               "Will bin reads by where they align to this sequence."))
@@ -173,6 +176,9 @@ def Main():
     
     start_ts = time.time()
     command_util.CheckAllInstalled(['fastq-grep', 'bbduk.sh', 'bowtie2', 'samtools'])
+
+    tn_params = TranspositionParams.FromArgs(args)
+    print tn_params
 
     insert_db_fname = args.insert_db_filename
     bbone_db_fname = args.backbone_db_filename
@@ -276,22 +282,22 @@ def Main():
     forward = 1
     reverse = -1
     factory = rad_factory.ReadAlignmentDataFactory(
-        args.start_offset, fixed_5p, '5p', forward)
+        tn_params, '5p', forward)
     read_data_5p = factory.DictFromFileLists(
         filtered_masked_fnames, aligned_5p_fnames_bam)
     
     factory = rad_factory.ReadAlignmentDataFactory(
-        args.start_offset, fixed_3p, '3p', forward)
+        tn_params, '3p', forward)
     read_data_3p = factory.DictFromFileLists(
         filtered_masked_fnames, aligned_3p_fnames_bam)
     
     factory = rad_factory.ReadAlignmentDataFactory(
-        args.start_offset, fixed_5p, '5p', reverse)
+        tn_params, '5p', reverse)
     read_data_5p_rev = factory.DictFromFileLists(
         filtered_masked_fnames, aligned_5p_rev_fnames_bam)
     
     factory = rad_factory.ReadAlignmentDataFactory(
-        args.start_offset, fixed_3p, '3p', reverse)
+        tn_params, '3p', reverse)
     read_data_3p_rev = factory.DictFromFileLists(
         filtered_masked_fnames, aligned_3p_rev_fnames_bam)
     
