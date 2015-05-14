@@ -31,15 +31,14 @@ class ReadAlignmentData(object):
         analysis. Allows construction of ReadAlignmentData objects only once
         all data available.
         """
-        def __init__(self, backbone_start_offset,
-                     fixed_seq, fixed_seq_orientation, fixed_seq_end,
+        def __init__(self, transposition_params,
+                     fixed_seq_end, fixed_seq_orientation,
                      read_record=None, backbone_alignment=None):
             # These values may be set after construction.
             self.read_record = read_record
             self.backbone_alignment = backbone_alignment
         
-            self.start_offset = backbone_start_offset
-            self.fixed_seq = fixed_seq
+            self.tn_params = transposition_params
             self.fixed_seq_end = fixed_seq_end
             self.fixed_seq_orientation = fixed_seq_orientation
 
@@ -47,8 +46,7 @@ class ReadAlignmentData(object):
             """Has all required data."""
             return (self.read_record and 
                     self.backbone_alignment and 
-                    self.start_offset and 
-                    self.fixed_seq and 
+                    self.tn_params and 
                     self.fixed_seq_end and
                     self.fixed_seq_orientation)
         
@@ -61,36 +59,38 @@ class ReadAlignmentData(object):
             rad = ReadAlignmentData(
                 self.read_record,
                 self.backbone_alignment,
-                self.start_offset,
-                self.fixed_seq,
-                self.fixed_seq_orientation,
-                self.fixed_seq_end)
+                self.tn_params,
+                self.fixed_seq_end,
+                self.fixed_seq_orientation)
             return rad
     
-    def __init__(self, read_record,
+    def __init__(self,
+                 read_record,
                  backbone_alignment,
-                 backbone_start_offset,
-                 fixed_seq, fixed_seq_orientation, fixed_seq_end):
+                 transposition_params,
+                 fixed_seq_end, fixed_seq_orientation):
         """Object encapsulating variant calling from reads.
         
         TODO: rework all this. Very strange pattern we are using here. 
         
         Args:
-            read_id: ID of the read.
+            read_record: ID of the read.
+            backbone_alignment: alignment of backbone. 
             backbone_start_offset: offset of the start codon into the
                 sequence used to match the backbone (nt units). Used
                 to make insertion sites relative to the start codon.
-            fixed_5p_seq: fixed sequence verifying 5' end.
-            fixed_3p_seq: fixed sequence verifying 3' end.
+            fixed_seq: fixed sequence in this read.
+            fixed_seq_orientation: the orientation of the fixed sequence (+/-1).
+            fixed_seq_end: whether this is the 3' or 5' end.
         """
+        self.tn_params = transposition_params
         self.backbone_alignment = backbone_alignment
         self.read_record = read_record
-        self.start_offset = backbone_start_offset
-        self.fixed_seq = fixed_seq
         self.fixed_seq_end = fixed_seq_end
         self.fixed_seq_orientation = fixed_seq_orientation
         
-        self.tn_bp_duplicated = 5
+        self.tn_bp_duplicated = self.tn_params.tn_bp_duplicated
+        self.start_offset = self.tn_params.backbone_start_offset
         
         self.insertion_index = None
         self.insertion_site = None

@@ -12,15 +12,12 @@ class ReadAlignmentDataFactory(object):
     
     ALLOWED_FIXED_SEQ_ENDS = ('3p', '5p')
     
-    def __init__(self, backbone_start_offset, fixed_seq,
+    def __init__(self, tn_params,
                  fixed_seq_end, fixed_seq_orientation):
         """Object that makes ReadAlignmentData instances.
         
         Args:
-            backbone_start_offset: offset of the start codon into the
-                sequence used to match the backbone (nt units). Used
-                to make insertion sites relative to the start codon.
-            fixed_seq: fixed sequence found in these reads.
+            tn_params: TranspositionParams object.
             fixed_seq_end: '3p' or '5p' - whether this sequence represents
                 the 3' or 5' end of the transposon insert.
             orientation: +/-1. +1 indicating fixed sequence found as
@@ -28,16 +25,16 @@ class ReadAlignmentDataFactory(object):
         """
         assert fixed_seq_end in self.ALLOWED_FIXED_SEQ_ENDS
         assert abs(fixed_seq_orientation) == 1
-        self.start_offset = backbone_start_offset 
-        self.fixed_seq = fixed_seq
+        self.tn_params = tn_params 
         self.fixed_seq_end = fixed_seq_end
         self.fixed_seq_orientation = fixed_seq_orientation
     
     def NewBuilder(self, read_record):
         """Creates a ReadAlignmentBuilder object."""
         return rad.ReadAlignmentData.Builder(
-            self.start_offset, self.fixed_seq, self.fixed_seq_orientation,
-            self.fixed_seq_end, read_record=read_record)
+            self.tn_params, self.fixed_seq_end,
+            self.fixed_seq_orientation,
+            read_record=read_record)
 
     def DictFromFiles(self,
                       masked_reads_fname,
