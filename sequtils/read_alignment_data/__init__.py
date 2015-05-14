@@ -3,9 +3,6 @@
 
 from Bio import Seq
 
-DEFAULT_FIXED_5P_SEQ = Seq.Seq('TGCATC')
-DEFAULT_FIXED_3P_SEQ = Seq.Seq('GCGTCA')
-
 
 class ReadAlignmentData(object):
     """Contains alignments of a transposon mutagenesis library.
