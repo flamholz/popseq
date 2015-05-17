@@ -32,6 +32,16 @@ class AmbiguousSeqTest(unittest.TestCase):
                 # Check that the generated sequence could have been generated 
                 # from the ambiguous sequence.
                 self.assertAmbiguousSeqInstance(ambig, seq, n)
+                self.assertEquals(n, gen.IsInstance(seq))
+
+    def testFailure(self):
+        # These sequences are not instances of the ambiguous key sequence.
+        ambiguous_seqs = {'BCT': ['TTT', 'AGA', 'CCTTCTACT'],
+                          'CGBNNAT': ['cagtagt', 'CTCAAATC']}
+        for ambig, defineds in ambiguous_seqs.iteritems():
+            gen = AmbiguousSequenceGenerator(ambig)
+            for should_fail in defineds:
+                self.assertEquals(0, gen.IsInstance(should_fail))
 
 
 if __name__ == '__main__':

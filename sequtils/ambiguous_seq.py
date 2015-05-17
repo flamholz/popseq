@@ -44,3 +44,27 @@ class AmbiguousSequenceGenerator(object):
         for _ in xrange(n):
             out.extend([self._RandomNucleotide(b) for b in self.pattern])
         return Seq(''.join(out))
+    
+    def IsInstance(self, defined):
+        """Returns > 0 if the defined sequence is an instance of this
+            ambiguous one.
+        
+        Args:
+            defined: a defined DNA sequence with no ambiguous nt.
+        
+        Returns:
+            A number N equal to the number of repeats of the ambiguous template
+            in the defined sequence.
+        """
+        defined = defined.upper()
+        n = 0
+        i = 0
+        while i < len(defined):
+            for ba in self.pattern:
+                bd = defined[i]
+                allowed_bases = IUPACData.ambiguous_dna_values[ba]
+                if bd not in allowed_bases:
+                    return 0
+                i += 1
+            n += 1
+        return n
