@@ -91,7 +91,7 @@ class Transposition(object):
         """
         self.id = id_num
         self.insert_gen = insert_gen
-        self.insert, self.linker_3p, self.linker_5p = insert_gen.next()
+        self.insert, self.linker_5p, self.linker_3p = insert_gen.next()
         self.insert_len = len(self.insert)
         self.target = target_seq
         self.orf_start = target_orf_start
