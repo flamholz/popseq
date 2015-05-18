@@ -72,7 +72,7 @@ class ReadAlignmentDataFactory(object):
             # They are separated by whitespace.
             read_id = it.query_name.split()[0]
             if read_id not in read_data_builders:
-                print 'Never saw read ID', read_id
+                #print 'Never saw read ID', read_id
                 continue
             
             builder = read_data_builders[read_id]

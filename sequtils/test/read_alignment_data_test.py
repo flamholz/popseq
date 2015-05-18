@@ -4,25 +4,31 @@ import unittest
 import sequtils.read_alignment_data.factory as rad_factory
 
 from Bio import SeqIO
+from Bio.Seq import Seq
 from sequtils import read_alignment_data as rad
+from sequtils.ambiguous_seq import AmbiguousSequence
 from sequtils.synthetic_transposon import Fragment
 from sequtils.transposition_params import TranspositionParams
 
 
-class ReadAligmentDataTest(unittest.TestCase):
+class ReadAlignmentDataTest(unittest.TestCase):
     RAW_READS = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6.fa'
+    FILTERED_READS = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_insert_bbone_filtered.fq'
     MASKED_READS_FNAME = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_insert_masked.fq'
     ALIGNED_3P = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_trimmed_3p_aligned.bam'
     ALIGNED_5P = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_trimmed_5p_aligned.bam'
     ALIGNED_3P_REV = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_trimmed_3p_rev_aligned.bam'
     ALIGNED_5P_REV = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_trimmed_5p_rev_aligned.bam'
     
-    TN_PARAMS = TranspositionParams(insert_seq=None,
-                                    backbone_seq=None,
-                                    backbone_start_offset=23,
-                                    fixed_seq_5p="TGCATC",
-                                    fixed_seq_3p="GCGTCA",
-                                    tn_bp_duplicated=5)
+    TN_PARAMS = TranspositionParams(
+        insert_seq=TranspositionParams.LoadFASTA('data/sequences/cas9/pdz_insert.fa'),
+        backbone_seq=TranspositionParams.LoadFASTA('data/sequences/cas9/dCas9_cloning_ends.fa'),
+        backbone_start_offset=23,
+        fixed_seq_5p=Seq("TGCATC"),
+        fixed_seq_3p=Seq("GCGTCA"),
+        linker_pattern=AmbiguousSequence(Seq("BCT")),
+        max_linker_repeats=3,
+        tn_bp_duplicated=5)
     FORWARD = 1
     REVERSE = -1
 
@@ -38,7 +44,7 @@ class ReadAligmentDataTest(unittest.TestCase):
     def GetReadAlignementData(self, end, orientation, aligned_fname):
         factory = rad_factory.ReadAlignmentDataFactory(
             self.TN_PARAMS, end, orientation)
-        rads_by_id = factory.DictFromFiles(self.MASKED_READS_FNAME,
+        rads_by_id = factory.DictFromFiles(self.FILTERED_READS,
                                            aligned_fname)
         return rads_by_id
     
@@ -131,7 +137,19 @@ class ReadAligmentDataTest(unittest.TestCase):
         for rad in rads_by_id.itervalues():
             read_info = Fragment.ParseInfoDict(rad.read_record)
             expected_insertion_site = read_info['ins']
+            expected_forward_ins = read_info['fin']
+            expected_forward_read = read_info['frd']
+            expected_linker_seq = read_info['l5p']
+            if rad.fixed_seq_end == '3p':
+                expected_linker_seq = read_info['l3p']
+
+            # NOTE: not testing insertion index because I carelessly defined
+            # then differently between the read generator and the read analysis.            
             self.assertEquals(expected_insertion_site, rad.insertion_site)
+            self.assertEquals(expected_forward_ins, rad.forward_insertion)
+            self.assertTrue(rad.valid_linker)
+            self.assertEquals(expected_linker_seq, str(rad.linker_seq))
+            self.assertEquals(expected_forward_read, rad.backbone_match_strand > 0)
 
     def testAligned5p(self):
         self.GenericTest('5p', self.FORWARD, self.ALIGNED_5P)
