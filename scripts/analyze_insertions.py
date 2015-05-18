@@ -165,6 +165,10 @@ def Main():
                         help="Path to use to store intermediate files.")
     parser.add_argument("-o", "--output_fname", required=True,
                         help="Where to write output data (CSV).")
+    parser.add_argument("--linker_pattern", required=True,
+                        help="A pattern of (ambiguous) DNA bases describing the linker.")
+    parser.add_argument("--max_linker_repeats", required=True, type=int,
+                        help="Maximum number of repeats of linker pattern.")
     parser.add_argument("--fixed_5p",
                         default="TGCATC",
                         help="Fixed sequence found on 5' end of insert.")
