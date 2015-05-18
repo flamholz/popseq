@@ -6,7 +6,7 @@ from Bio.Data import IUPACData
 from Bio.Seq import Seq
 
 
-class AmbiguousSequenceGenerator(object):
+class AmbiguousSequence(object):
     """Generates a concrete sequence at random from an ambiguous one."""
     def __init__(self, pattern):
         """Initialize.
@@ -15,6 +15,9 @@ class AmbiguousSequenceGenerator(object):
             pattern: a DNA sequence including ambiguous bases.
         """
         self.pattern = pattern.upper()
+    
+        for b in self.pattern:
+            assert b in IUPACData.ambiguous_dna_letters
     
     @staticmethod
     def _RandomNucleotide(b):
@@ -46,7 +49,7 @@ class AmbiguousSequenceGenerator(object):
         return Seq(''.join(out))
     
     def IsInstance(self, defined):
-        """Returns > 0 if the defined sequence is an instance of this
+        """Returns >= 0 if the defined sequence is an instance of this
             ambiguous one.
         
         Args:
@@ -56,15 +59,20 @@ class AmbiguousSequenceGenerator(object):
             A number N equal to the number of repeats of the ambiguous template
             in the defined sequence.
         """
+        l_defined = len(defined)
+        if l_defined % len(self.pattern) != 0:
+            # Need an integer multiple of pattern to match.
+            return -1
+        
         defined = defined.upper()
         n = 0
         i = 0
-        while i < len(defined):
+        while i < l_defined:
             for ba in self.pattern:
                 bd = defined[i]
                 allowed_bases = IUPACData.ambiguous_dna_values[ba]
                 if bd not in allowed_bases:
-                    return 0
+                    return -1
                 i += 1
             n += 1
         return n

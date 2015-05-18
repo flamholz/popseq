@@ -3,7 +3,7 @@
 import unittest
 
 from Bio.Data import IUPACData
-from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.ambiguous_seq import AmbiguousSequence
 
 
 class AmbiguousSeqTest(unittest.TestCase):                                         
@@ -26,7 +26,7 @@ class AmbiguousSeqTest(unittest.TestCase):
                           'WVWVTCWVNN',
                           'bCaaN']
         for ambig in ambiguous_seqs:
-            gen = AmbiguousSequenceGenerator(ambig)
+            gen = AmbiguousSequence(ambig)
             for n in xrange(10):
                 seq = gen.Generate(n=n)
                 # Check that the generated sequence could have been generated 
@@ -36,12 +36,13 @@ class AmbiguousSeqTest(unittest.TestCase):
 
     def testFailure(self):
         # These sequences are not instances of the ambiguous key sequence.
-        ambiguous_seqs = {'BCT': ['TTT', 'AGA', 'CCTTCTACT'],
+        ambiguous_seqs = {'BCT': ['TTT', 'AGA', 'CCTTCTACT', 'GCTCC'],
                           'CGBNNAT': ['cagtagt', 'CTCAAATC']}
         for ambig, defineds in ambiguous_seqs.iteritems():
-            gen = AmbiguousSequenceGenerator(ambig)
+            gen = AmbiguousSequence(ambig)
+            self.assertEquals(0, gen.IsInstance(''))
             for should_fail in defineds:
-                self.assertEquals(0, gen.IsInstance(should_fail))
+                self.assertEquals(-1, gen.IsInstance(should_fail))
 
 
 if __name__ == '__main__':
