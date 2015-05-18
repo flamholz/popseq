@@ -5,7 +5,7 @@ import unittest
 from Bio.Alphabet import DNAAlphabet
 from Bio.Seq import Seq
 from sequtils.insert_generator import InsertGenerator
-from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.ambiguous_seq import AmbiguousSequence
 
 
 class AmbiguousSeqTest(unittest.TestCase):
@@ -26,7 +26,7 @@ class AmbiguousSeqTest(unittest.TestCase):
             
     def testLinker(self):
         linker_seq = 'BCT'
-        linker_gen = AmbiguousSequenceGenerator(linker_seq)
+        linker_gen = AmbiguousSequence(linker_seq)
         gen = InsertGenerator(self.INSERT_SEQ, self.FIXED_5P, self.FIXED_3P, linker_gen)
         
         insert_str = str(self.INSERT_SEQ)
