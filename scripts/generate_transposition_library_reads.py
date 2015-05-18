@@ -6,7 +6,7 @@ from Bio.Alphabet import DNAAlphabet
 from Bio.Seq import Seq
 from Bio.SeqIO import FastaIO
 from sequtils.insert_generator import InsertGenerator
-from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.ambiguous_seq import AmbiguousSequence
 from sequtils.synthetic_transposon import Transposition
 
 # TODO: set these sequences from FASTA files.
@@ -43,7 +43,7 @@ def Main():
     if args.include_linkers:
         print 'Will generate random linkers'
         # Maybe make degenerate linker sequnce configurable?
-        linker_gen = AmbiguousSequenceGenerator('BCT')
+        linker_gen = AmbiguousSequence('BCT')
     else:
         print 'Will not generate random linkers'
     insert_gen = InsertGenerator(trans_pdz, fixed_5p, fixed_3p,
