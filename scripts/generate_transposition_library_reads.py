@@ -17,6 +17,8 @@ target_cas9 = Seq('GATCTAAAGAGGAGAAAGGATCTATGGATAAGAAATACTCAATAGGCTTAGCTATCGGCAC
 orf_start = 24
 
 # Additional T in there to keep things in frame.
+# TODO: add this additional base to the TranspositionParams so we can use them here too
+# and share the code. 
 fixed_5p = Seq('TGCATC' + 'T')
 fixed_3p = Seq('GCGTCA')
 
