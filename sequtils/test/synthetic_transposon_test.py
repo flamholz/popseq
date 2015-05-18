@@ -7,7 +7,7 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 from Bio.SeqIO import FastaIO
 from sequtils.insert_generator import InsertGenerator
-from sequtils.ambiguous_seq import AmbiguousSequenceGenerator
+from sequtils.ambiguous_seq import AmbiguousSequence
 from sequtils.synthetic_transposon import Transposition, Fragment
 from StringIO import StringIO
 
@@ -18,7 +18,7 @@ class TranspositionTest(unittest.TestCase):
     FIXED_5P = Seq('TGCATC' + 'T')
     FIXED_3P = Seq('GCGTCA')
     ORF_START = 24
-    LINKER_GEN = AmbiguousSequenceGenerator('BCT')
+    LINKER_GEN = AmbiguousSequence('BCT')
     
     def testNoLinker(self):
         insert_gen = InsertGenerator(self.INSERT_SEQ, self.FIXED_5P, self.FIXED_3P)
