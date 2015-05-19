@@ -3,10 +3,10 @@
 import argparse
 
 from Bio.SeqIO import FastaIO
+from gzip import GzipFile
 from sequtils.insert_generator import InsertGenerator
 from sequtils.synthetic_transposon import Transposition
 from sequtils.transposition_params import TranspositionParams
-from zipfile import ZipFile
 
 
 def Main():
@@ -53,9 +53,9 @@ def Main():
         writer.write_footer()
     
     print 'Zipping generated reads.'
-    zip_fname = '%s.zip' % args.output_fname
-    with ZipFile(zip_fname, mode='w') as zipf:
-        zipf.write(args.output_fname)
+    gzip_fname = '%s.gz' % args.output_fname
+    with GzipFile(gzip_fname, mode='w') as gzipf:
+        gzipf.write(args.output_fname)
 
 
 if __name__ == '__main__':
