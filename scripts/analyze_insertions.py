@@ -262,22 +262,22 @@ def Main():
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '5p', forward)
     read_data_5p = factory.DictFromFileLists(
-        filtered_masked_fnames, aligned_5p_fnames_bam)
+        insert_bbone_filtered_fnames, aligned_5p_fnames_bam)
     
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '3p', forward)
     read_data_3p = factory.DictFromFileLists(
-        filtered_masked_fnames, aligned_3p_fnames_bam)
+        insert_bbone_filtered_fnames, aligned_3p_fnames_bam)
     
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '5p', reverse)
     read_data_5p_rev = factory.DictFromFileLists(
-        filtered_masked_fnames, aligned_5p_rev_fnames_bam)
+        insert_bbone_filtered_fnames, aligned_5p_rev_fnames_bam)
     
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '3p', reverse)
     read_data_3p_rev = factory.DictFromFileLists(
-        filtered_masked_fnames, aligned_3p_rev_fnames_bam)
+        insert_bbone_filtered_fnames, aligned_3p_rev_fnames_bam)
     
     out_fname = args.output_fname
     print 'Writing output to', out_fname
