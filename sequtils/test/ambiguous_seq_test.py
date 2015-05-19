@@ -20,6 +20,11 @@ class AmbiguousSeqTest(unittest.TestCase):
                 self.assertIn(actual_base, allowed_bases)
                 i += 1
 
+    def testEmpty(self):
+        gen = AmbiguousSequence('')
+        for n in xrange(20):
+            self.assertEquals('', str(gen.Generate(n)))
+
     def testBasic(self):
         ambiguous_seqs = ['BCT',
                           'CGBNNAT',

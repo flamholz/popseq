@@ -10,7 +10,7 @@ from sequtils.ambiguous_seq import AmbiguousSequence
 
 class AmbiguousSeqTest(unittest.TestCase):
     INSERT_SEQ = Seq('CAACGTCGGCGTGTGACGGTGCGCAGGTCGTGCTCGAAGTTAAGTACATG', DNAAlphabet())
-    FIXED_5P = Seq('TGCATC' + 'T')
+    FIXED_5P = Seq('TGCATC')
     FIXED_3P = Seq('GCGTCA')
 
     def testNoLinker(self):
@@ -27,7 +27,8 @@ class AmbiguousSeqTest(unittest.TestCase):
     def testLinker(self):
         linker_seq = 'BCT'
         linker_gen = AmbiguousSequence(linker_seq)
-        gen = InsertGenerator(self.INSERT_SEQ, self.FIXED_5P, self.FIXED_3P, linker_gen)
+        gen = InsertGenerator(self.INSERT_SEQ, self.FIXED_5P, self.FIXED_3P,
+                              extra_bp_5p='T', linker_gen=linker_gen, max_linker_repeats=2)
         
         insert_str = str(self.INSERT_SEQ)
         fixed_5p_str = str(self.FIXED_5P)
@@ -42,7 +43,7 @@ class AmbiguousSeqTest(unittest.TestCase):
             
             start_idx = generated_str.find(insert_str[:12])
             end_idx = generated_str.find(fixed_3p_str)
-            linker_5p_nt = start_idx - len(self.FIXED_5P)
+            linker_5p_nt = start_idx - len(self.FIXED_5P) - 1
             linker_3p_nt = end_idx - start_idx - len(insert_str)
              
             self.assertGreater(start_idx, -1)
