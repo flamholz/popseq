@@ -10,7 +10,7 @@ from sequtils.transposition_params import TranspositionParams
 
 
 class FactoryTest(unittest.TestCase):
-    MASKED_READS_FNAME = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_insert_bbone_filtered.fq'
+    FILTERED_READS = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_insert_bbone_filtered.fq'
     ALIGNED_3P = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_filtered_trimmed_3p_aligned.bam'
     ALIGNED_5P = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_filtered_trimmed_5p_aligned.bam'
     ALIGNED_3P_REV = 'sequtils/test/data/DFS001_2_index6_GCCAAT_L004_R1_001_clipped100k_filtered_trimmed_3p_rev_aligned.bam'
@@ -33,12 +33,17 @@ class FactoryTest(unittest.TestCase):
                     aligned_fname):
         factory = rad_factory.ReadAlignmentDataFactory(
             self.TN_PARAMS, end, orientation)
-        rads_by_id = factory.DictFromFiles(self.MASKED_READS_FNAME,
+        rads_by_id = factory.DictFromFiles(self.FILTERED_READS,
                                            aligned_fname)
+        n_reads = 0
         for read_id, rad in rads_by_id.iteritems():
+            n_reads += 1
             self.assertEquals(end, rad.fixed_seq_end)
             self.assertEquals(orientation, rad.fixed_seq_orientation)
             self.assertEquals(read_id, rad.read_record.id)
+            self.assertEquals(self.TN_PARAMS.ValidLinker(rad.linker_seq),
+                              rad.valid_linker)
+        self.assertGreater(n_reads, 100) # Tests at least 100 reads.
 
         outf = StringIO()
         factory.WriteCSVFile(rads_by_id.itervalues(), outf)
