@@ -88,6 +88,13 @@ class ReadAlignmentDataFactory(object):
 
         # Generate ReadAlignmentData from builder for every remaining read.
         read_data = dict((k, v.Build()) for k,v in read_data_builders.iteritems())
+
+        """
+        for rad in read_data.values():
+            if rad.insert_start_idx < 0:
+                rad.PrettyPrint()
+        """
+        
         return read_data
     
     def DictFromFileLists(self,

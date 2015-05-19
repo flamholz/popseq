@@ -46,7 +46,7 @@ class FactoryTest(unittest.TestCase):
             
             # Check completeness of data.
             self.assertIsNotNone(rad.insertion_site)
-            self.assertIsNotNone(rad.insertion_index)
+            self.assertIsNotNone(rad.insertion_idx)
             self.assertIsNotNone(rad.linker_seq)
             self.assertIsNotNone(rad.expected_insert_end_seq)
             self.assertIsNotNone(rad.in_frame_insertion)

@@ -245,7 +245,8 @@ class ReadAlignmentData(object):
         self.fixed_seq_start_idx = fixed_seq_start
         self.fixed_seq_end_idx = fixed_seq_start + fixed_l
         
-        n_insert_bp = 10
+        # TODO: this should be parameterized.
+        n_insert_bp = 8
         insert_end_seq = self.tn_params.GetInsertEndSequence(
             self.fixed_seq_end, self.fixed_seq_orientation, n_insert_bp)
         self.expected_insert_end_seq = insert_end_seq
