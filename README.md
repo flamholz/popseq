@@ -16,12 +16,16 @@ Code for handling data from library sequencing.
 * rpy2 (for R-based analysis)
 
 # External Dependencies
-* BBMap toolkit for fast filtering and alignment of reads.
+* BBMap toolkit for fast filtering and alignment of reads. 
+ * http://sourceforge.net/projects/bbmap/
 * fastq-tools for regex trimming of reads.
-* R, DESeq: http://bioconductor.org/packages/release/bioc/html/DESeq.html
+ * note: you need to install our custom version of fastq-tools.
+ * https://github.com/SavageLab/fastq-tools
+* R, DESeq
+ * http://bioconductor.org/packages/release/bioc/html/DESeq.html
 
 # Running tests
 * Install the nose test runner. 
-** sudo pip install nose
+ * code(sudo pip install nose)
 * Run all tests
-** nosetests ./
+ * code(nosetests ./)
