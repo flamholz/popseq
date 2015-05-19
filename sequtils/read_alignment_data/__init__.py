@@ -279,15 +279,17 @@ class ReadAlignmentData(object):
         self.insert_end_idx = self.insert_start_idx + n_insert_bp
         # TODO: handle the case that we don't find the insert...
         
+        # Bases added on the 3' end of 5' linker to keep stuff in frame
+        n_extra_bp_5p = self.tn_params.n_extra_bp_5p
         if self.fixed_seq_end == '5p':
             if self.fixed_seq_orientation > 0:
                 fixed_end = fixed_seq_start + fixed_l
-                linker_start = fixed_end + 1
+                linker_start = fixed_end + n_extra_bp_5p
                 linker_end = self.insert_start_idx 
             else:
                 fixed_end = fixed_seq_start - fixed_l
                 linker_start = self.insert_end_idx
-                linker_end = fixed_seq_start - 1
+                linker_end = fixed_seq_start - n_extra_bp_5p
         elif self.fixed_seq_end == '3p':
             # Note: the offsetting nt is only on the 5' end.
             # Therefore we only need that offset correction above.

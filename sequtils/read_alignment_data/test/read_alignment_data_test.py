@@ -27,6 +27,7 @@ class ReadAlignmentDataTest(unittest.TestCase):
         fixed_seq_5p=Seq("TGCATC"),
         fixed_seq_3p=Seq("GCGTCA"),
         linker_pattern=AmbiguousSequence(Seq("BCT")),
+        extra_bp_5p=Seq('T'),
         max_linker_repeats=3,
         tn_bp_duplicated=5)
     FORWARD = 1
