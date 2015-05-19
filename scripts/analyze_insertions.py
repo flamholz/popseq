@@ -148,33 +148,14 @@ def Main():
     parser.add_argument("-i", "--insert_db_filename", required=True,
                         help=("Path to FASTA file containing insert ends to align reads to. "
                               "Will only retain reads that align well to this DB."))
-    parser.add_argument("--insert_seq_filename", required=True,
-                        help=("Path to FASTA file containing insert sequence"))
-    parser.add_argument("-b", "--backbone_db_filename", required=True,
-                        help=("Path to FASTA file containing backbone sequence. "
-                              "Will bin reads by where they align to this sequence."))
     parser.add_argument("-r", "--read_filenames", nargs='+', required=True,
                         help="Path to FASTQ files containing reads.")
-    parser.add_argument("--start_offset", required=True, type=int,
-                        help=("Offset of the start codon into the sequence used "
-                              "to match the backbone (nt units)"))
-    parser.add_argument("--tn_bp_duplicated", required=True, type=int,
-                        help="Number of bases duplicated by transposition (nt units)")
     parser.add_argument("-t", "--tmp_dir",
                         default="_read_filter_data",
                         help="Path to use to store intermediate files.")
     parser.add_argument("-o", "--output_fname", required=True,
                         help="Where to write output data (CSV).")
-    parser.add_argument("--linker_pattern", required=True,
-                        help="A pattern of (ambiguous) DNA bases describing the linker.")
-    parser.add_argument("--max_linker_repeats", required=True, type=int,
-                        help="Maximum number of repeats of linker pattern.")
-    parser.add_argument("--fixed_5p",
-                        default="TGCATC",
-                        help="Fixed sequence found on 5' end of insert.")
-    parser.add_argument("--fixed_3p",
-                        default="GCGTCA",
-                        help="Fixed sequence found on 3' end of insert.")
+    TranspositionParams.AddArgs(parser)
     parser.set_defaults(summary_output=True)
     args = parser.parse_args()
     
@@ -273,13 +254,6 @@ def Main():
     
     print '##### Evaluating backbone alignment #####'
     
-    n_eq = 0
-    total = 0
-    
-    reads_by_id = {}
-    matching_ids = set()
-    
-    
     # TODO: each of these calls to the factory is reading the same masked reads
     # again. If this is slow, should refactor into a container for the reads.
     # Otherwise, ignore. 
@@ -313,140 +287,7 @@ def Main():
                                         read_data_3p_rev.itervalues())
     factory.WriteCSVFilename(all_matched_reads, out_fname)
     
-    """
-    for bam_fname in aligned_5p_fnames_bam:
-        alignedf = pysam.AlignmentFile(bam_fname, 'rb')
-        aligned = alignedf.fetch()
-        for i, it in enumerate(aligned):
-            match_3p_end = it.reference_end
-            if it.is_reverse:
-                match_3p_end = it.reference_start + args.tn_bp_duplicated
-        
-            insertion_idx = match_3p_end
-            insertion_site = insertion_idx - args.start_offset
-            try:
-                read_info = _parseReadInfo(it.query_name)
-            except:
-                print 'Error parsing', it
-                continue
-            
-            expected_insertion_site = read_info["ins"]
-            read_info["cins"] = insertion_site
-            n_eq += (expected_insertion_site == insertion_site)            
-            total += 1
-            
-            read_id = ReadID(read_info)
-            read_info['rid'] = read_id
-            if expected_insertion_site == insertion_site:
-                if read_id in matching_ids:
-                    print 'AAA 5p'
-                matching_ids.add(read_id)
-            reads_by_id[read_id] = read_info
-            
-    for bam_fname in aligned_3p_fnames_bam:
-        alignedf = pysam.AlignmentFile(bam_fname, 'rb')
-        aligned = alignedf.fetch()
-        for i, it in enumerate(aligned):
-            match_5p_end = it.reference_start + args.tn_bp_duplicated
-            if it.is_reverse:
-                match_5p_end = it.reference_end
-            
-            insertion_idx = match_5p_end
-            insertion_site = insertion_idx - args.start_offset
-            
-            read_info = _parseReadInfo(it.query_name)
-            expected_insertion_site = read_info["ins"]
-            read_info["cins"] = insertion_site
-            
-            n_eq += (expected_insertion_site == insertion_site)            
-            total += 1
-            
-            read_id = ReadID(read_info)
-            read_info['rid'] = read_id
-            if expected_insertion_site == insertion_site:
-                if read_id in matching_ids:
-                    print 'AAA 3p'
-                matching_ids.add(read_id)
-            reads_by_id[read_id] = read_info
 
-    for bam_fname in aligned_5p_rev_fnames_bam:
-        alignedf = pysam.AlignmentFile(bam_fname, 'rb')
-        aligned = alignedf.fetch()
-        for i, it in enumerate(aligned):
-            match_5p_end = it.reference_start + args.tn_bp_duplicated
-            if it.is_reverse:
-                match_5p_end = it.reference_end
-            
-            insertion_idx = match_5p_end
-            insertion_site = insertion_idx - args.start_offset
-            
-            read_info = _parseReadInfo(it.query_name)
-            expected_insertion_site = read_info["ins"]
-            read_info["cins"] = insertion_site
-            n_eq += (expected_insertion_site == insertion_site)            
-            total += 1
-            
-            read_id = ReadID(read_info)
-            read_info['rid'] = read_id
-            if expected_insertion_site == insertion_site:
-                if read_id in matching_ids:
-                    print 'AAA 5p rev'
-                matching_ids.add(read_id)
-            reads_by_id[read_id] = read_info
-
-    for bam_fname in aligned_3p_rev_fnames_bam:
-        alignedf = pysam.AlignmentFile(bam_fname, 'rb')
-        aligned = alignedf.fetch()
-        for i, it in enumerate(aligned):
-            match_5p_end = it.reference_end
-            if it.is_reverse:
-                match_5p_end = it.reference_start + args.tn_bp_duplicated
-            
-            insertion_idx = match_5p_end
-            insertion_site = insertion_idx - args.start_offset
-            
-            read_info = _parseReadInfo(it.query_name)
-            expected_insertion_site = read_info["ins"]
-            read_info["cins"] = insertion_site
-            
-            n_eq += (expected_insertion_site == insertion_site)            
-            total += 1
-            
-            read_id = ReadID(read_info)
-            read_info['rid'] = read_id
-            if expected_insertion_site == insertion_site:
-                if read_id in matching_ids:
-                    print 'AAA 3p rev'
-                matching_ids.add(read_id)
-               
-            reads_by_id[read_id] = read_info
-    
-    print '%d correct insertion sites' % n_eq
-    print '%d total reads mapped' % total
-    pct = 100.0 * float(n_eq) / float(total)
-    print '%.2f%% pct of total' % pct
-    
-    
-    for reads_fname in insert_bbone_filtered_fnames:
-        reader = SeqIO.parse(reads_fname, 'fastq')
-        for record in reader:
-            read_info = _parseReadInfo(record.description)
-            read_id = ReadID(read_info)
-            read_info["cins"] = None
-            read_info['rid'] = read_id
-            if read_id not in reads_by_id:
-                reads_by_id[read_id] = read_info
-    
-    print '##### Writing output file #####'
-    fieldnames = sorted(read_info.keys())
-    print 'total reads examined', len(reads_by_id)
-    print 'total matching', len(matching_ids)
-    out_csv_fname = os.path.join(args.tmp_dir, args.output_fname)
-    with open(out_csv_fname, 'w') as outf:
-        writer = csv.DictWriter(outf, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(reads_by_id.itervalues())
-    """
     duration = time.time() - start_ts
     print 'Running time: %.2f minutes' % (duration/60.0)
     
