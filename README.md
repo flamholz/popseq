@@ -26,6 +26,6 @@ Code for handling data from library sequencing.
 
 # Running tests
 * Install the nose test runner. 
- * code(sudo pip install nose)
+ * sudo pip install nose
 * Run all tests
- * code(nosetests ./)
+ * nosetests ./
