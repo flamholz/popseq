@@ -10,7 +10,8 @@ class FilenameUtilTests(unittest.TestCase):
 
 	def testMakeFnameBasic(self):
 		out_ext = 'fq'
-		test_cases = (('foo.fa', 'foo.fq'),
+		test_cases = (('foo.fa.gz', 'foo.fq'),
+					  ('foo.fa', 'foo.fq'),
 					  ('asdkmals_askdm12.bz2', 'asdkmals_askdm12.fq'),
 					  ('/home/ban/maggots/s123_sd.mmq', 's123_sd.fq'))
 		for input_fname, expected_out in test_cases:

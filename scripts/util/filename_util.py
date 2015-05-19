@@ -2,6 +2,7 @@
 
 import glob
 import itertools
+import os
 
 from os import path
 
@@ -33,8 +34,8 @@ def MakeFname(in_fname, out_ext,
 	Returns:
 		New filename for output.
 	"""
-	head, tail = path.split(in_fname)
-	name, ext = path.splitext(tail)
+	unused_head, tail = path.split(in_fname)
+	name = tail.split(os.extsep)[0]
 	fname = '%s.%s' % (name, out_ext)
 	if postfix:
 		fname = '%s_%s.%s' % (name, postfix, out_ext)
