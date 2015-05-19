@@ -43,6 +43,30 @@ class FactoryTest(unittest.TestCase):
             self.assertEquals(read_id, rad.read_record.id)
             self.assertEquals(self.TN_PARAMS.ValidLinker(rad.linker_seq),
                               rad.valid_linker)
+            
+            # Check completeness of data.
+            self.assertIsNotNone(rad.insertion_site)
+            self.assertIsNotNone(rad.insertion_index)
+            self.assertIsNotNone(rad.linker_seq)
+            self.assertIsNotNone(rad.expected_insert_end_seq)
+            self.assertIsNotNone(rad.in_frame_insertion)
+            self.assertIsNotNone(rad.forward_insertion)
+            self.assertIsNotNone(rad.backbone_match_strand)
+            self.assertEquals(rad.forward_insertion,
+                                  rad.fixed_seq_orientation == rad.backbone_match_strand)
+            
+            self.assertIsNotNone(rad.insert_start_idx)
+            self.assertIsNotNone(rad.insert_end_idx)
+            self.assertIsNotNone(rad.backbone_start_idx)
+            self.assertIsNotNone(rad.backbone_end_idx)
+            self.assertIsNotNone(rad.linker_start_idx)
+            self.assertIsNotNone(rad.linker_end_idx)
+            if rad.insert_start_idx >= 0:
+                # Found the insert
+                self.assertIsNotNone(rad.insert_match_strand)
+                self.assertIsNotNone(rad.linker_start_idx)
+                self.assertIsNotNone(rad.linker_end_idx)    
+                
         self.assertGreater(n_reads, 100) # Tests at least 100 reads.
 
         outf = StringIO()

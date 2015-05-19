@@ -73,20 +73,18 @@ class ReadAlignmentData(object):
         Args:
             read_record: ID of the read.
             backbone_alignment: alignment of backbone. 
-            backbone_start_offset: offset of the start codon into the
-                sequence used to match the backbone (nt units). Used
-                to make insertion sites relative to the start codon.
-            fixed_seq: fixed sequence in this read.
+            transposition_params: initialized TranspositionParams object.
             fixed_seq_orientation: the orientation of the fixed sequence (+/-1).
             fixed_seq_end: whether this is the 3' or 5' end.
         """
         self.tn_params = transposition_params
         self.backbone_alignment = backbone_alignment
         self.read_record = read_record
+        self.read_id = self.read_record.id
         self.fixed_seq_end = fixed_seq_end
         self.fixed_seq_orientation = fixed_seq_orientation
                 
-        self.insertion_index = None
+        self.insertion_idx = None
         self.insertion_site = None
         self.linker_seq = None
         self.expected_insert_end_seq = None
@@ -107,10 +105,11 @@ class ReadAlignmentData(object):
         self.linker_end_idx = None
         
         # Indices into the read of the part that aligned to backbone
-        self.bbone_start_idx = None
-        self.bbone_end_idx = None
+        self.backbone_start_idx = None
+        self.backbone_end_idx = None
 
         # Indices into the read of the part that aligned to insert
+        # Set to -1 if we did not find the insert.
         self.insert_start_idx = None
         self.insert_end_idx = None
         
@@ -118,46 +117,32 @@ class ReadAlignmentData(object):
         # Note: this can be true even if the insert is reversed since
         # it will still allow for in-frame translation of the 3' end
         # of the backbone. 
-        self.in_frame_insertion = False
+        self.in_frame_insertion = None
         # True if the insert was inserted in the same orientation as
         # the backbone (5' - 3')
-        self.forward_insertion = False
+        self.forward_insertion = None
         
         
         # Calculate insertion parameters on construction!
         self._CalculateInsertion()
         
-    """
-    TODO: more complete CSV ouput
-    DICT_FIELDNAMES = ['read_id', 'forward_insertion',
-                       'insert_match_end', 'insert_match_strand',
-                       'backbone_match_strand', 'fixed_seq_start', 'fixed_seq_end',
-                       'insertion_site', 'linker_length', 'linker_seq', 'insertion_in_frame']
-    """
-    DICT_FIELDNAMES = ['read_id', 'insertion_index', 'insertion_site']
+    DICT_FIELDNAMES = ['read_id', 'insertion_idx', 'insertion_site',
+                       'in_frame_insertion', 'forward_insertion',
+                       'linker_seq', 'valid_linker',
+                       'fixed_seq_end', 'fixed_seq_orientation',
+                       'insert_match_strand', 'backbone_match_strand',
+                       'backbone_start_idx', 'backbone_end_idx',
+                       'linker_start_idx', 'linker_end_idx',
+                       'insert_start_idx', 'insert_end_idx']
     
     def AsDict(self):
-        return {'read_id': self.read_record.id,
-                'insertion_index': self.insertion_index,
-                'insertion_site': self.insertion_site}
-        """
-        return {'read_id': self.read_id,
-                'forward_insertion': self.has_forward_insertion,
-                'insert_match_end': self.insert_match_end,
-                'insert_match_strand': self.insert_match_strand,
-                'backbone_match_strand': self.backbone_match_strand,
-                'fixed_seq_start': self.fixed_start,
-                'fixed_seq_end': self.fixed_end,
-                'insertion_site': self.insertion_site,
-                'linker_length': self.linker_length,
-                'linker_seq': self.linker_seq,
-                'insertion_in_frame': self.insertion_in_frame}
-        """
+        return dict((k, getattr(self, k)) for k in self.DICT_FIELDNAMES)
+        
     def PrettyPrint(self):
         """Prints the read data nicely to the commandline."""
         read_seq = str(self.read_record.seq)
-        backbone_start = self.bbone_start_idx
-        backbone_end = self.bbone_end_idx
+        backbone_start = self.backbone_start_idx
+        backbone_end = self.backbone_end_idx
         insert_start = self.insert_start_idx
         insert_end = self.insert_end_idx
         linker_start = self.linker_start_idx
@@ -196,7 +181,7 @@ class ReadAlignmentData(object):
         print 'Backbone matches strand', self.backbone_match_strand
         print 'Calculated insert start', self.insert_start_idx
         print 'Calculated insert end', self.insert_end_idx
-        print 'Calculated insertion index', self.insertion_index
+        print 'Calculated insertion index', self.insertion_idx
         print 'Calculated insertion site', self.insertion_site
         print 'Calculated linker seq', self.linker_seq
         print 'Valid linker seq', self.valid_linker
@@ -205,17 +190,6 @@ class ReadAlignmentData(object):
         print 'Forward insertion:', self.forward_insertion
         print 'In frame insertion:', self.in_frame_insertion
         print 
-    
-    def HasBothHSPs(self):
-        return (self._backbone_hsp is not None and
-                self._insert_hsp is not None)
-
-    def ConsistentInsertAndBackboneMatches(self):
-        return (self.HasBothHSPs() and
-                self._backbone_hsp.query_id == self._insert_hsp.query_id and 
-                self._n_insert_match_fragments == 1 and
-                self._n_backbone_match_fragments == 1 and
-                self._insert_match_strand == self._backbone_match_strand)
         
     def _CalculateInsertion(self):
         """Calculates the position of the insertion in the backbone."""
@@ -230,8 +204,8 @@ class ReadAlignmentData(object):
         if self.backbone_match_strand < 0:
             aligned_seq = aligned_seq.reverse_complement()
             
-        self.bbone_start_idx = self.read_record.seq.find(aligned_seq)
-        self.bbone_end_idx = self.bbone_start_idx + len(aligned_seq)
+        self.backbone_start_idx = self.read_record.seq.find(aligned_seq)
+        self.backbone_end_idx = self.backbone_start_idx + len(aligned_seq)
         
         # Position of insertion in nt sequence of target
         # not adjusted for start codon
@@ -261,7 +235,7 @@ class ReadAlignmentData(object):
         else:
             raise ValueError('Illegal value for fixed end %s' % self.fixed_end)
         
-        self.insertion_index = insertion_index
+        self.insertion_idx = insertion_index
         self.insertion_site = insertion_index - start_offset
         
         fixed_seq = self.tn_params.GetFixedSequence(self.fixed_seq_end,
@@ -276,8 +250,12 @@ class ReadAlignmentData(object):
             self.fixed_seq_end, self.fixed_seq_orientation, n_insert_bp)
         self.expected_insert_end_seq = insert_end_seq
         self.insert_start_idx = self.read_record.seq.find(insert_end_seq)
-        self.insert_end_idx = self.insert_start_idx + n_insert_bp
-        # TODO: handle the case that we don't find the insert...
+        if self.insert_start_idx >= 0:
+            self.insert_match_strand = self.fixed_seq_orientation
+            self.insert_end_idx = self.insert_start_idx + n_insert_bp
+            # TODO: what should we do about the linker in this case?
+        else:
+            self.insert_end_idx = -1
         
         # Bases added on the 3' end of 5' linker to keep stuff in frame
         n_extra_bp_5p = self.tn_params.n_extra_bp_5p

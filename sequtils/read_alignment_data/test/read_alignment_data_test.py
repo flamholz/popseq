@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-import unittest
+import gzip
 import sequtils.read_alignment_data.factory as rad_factory
+import unittest
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -12,7 +13,7 @@ from sequtils.transposition_params import TranspositionParams
 
 
 class ReadAlignmentDataTest(unittest.TestCase):
-    RAW_READS = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6.fa'
+    RAW_READS = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6.fa.gz'
     FILTERED_READS = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_insert_bbone_filtered.fq'
     MASKED_READS_FNAME = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_insert_masked.fq'
     ALIGNED_3P = 'sequtils/test/data/generated_PDZ_insertions_linker_1e6_filtered_trimmed_3p_aligned.bam'
@@ -65,7 +66,8 @@ class ReadAlignmentDataTest(unittest.TestCase):
         all_recovered = self.GetAllReadData()
         insert_len = len(self.INSERT_SEQ.seq)
         
-        raw_reads = SeqIO.parse(self.RAW_READS, 'fasta')
+        raw_reads_gzf = gzip.GzipFile(self.RAW_READS)
+        raw_reads = SeqIO.parse(raw_reads_gzf, 'fasta')
         masked_reads = SeqIO.parse(self.MASKED_READS_FNAME, 'fastq')
         n_guessed = 0
         n_guessed_correctly = 0
@@ -104,7 +106,8 @@ class ReadAlignmentDataTest(unittest.TestCase):
             if should_guess and not did_match:
                 false_negative_ids.add(read_id)
                 positions_did_not_guess.append(true_site)
-                
+        raw_reads_gzf.close() ## close zipfile
+        
         # Perfect precision - all guesses were correct.
         self.assertEquals(n_guessed, n_guessed_correctly)
         
@@ -151,6 +154,13 @@ class ReadAlignmentDataTest(unittest.TestCase):
             self.assertTrue(rad.valid_linker)
             self.assertEquals(expected_linker_seq, str(rad.linker_seq))
             self.assertEquals(expected_forward_read, rad.backbone_match_strand > 0)
+            
+            rad_dict = rad.AsDict()
+            self.assertSetEqual(set(rad.DICT_FIELDNAMES),
+                                set(rad_dict.keys()))
+            # Data should come right out of the object.
+            for k,v in rad_dict.iteritems():
+                self.assertEquals(getattr(rad, k), v)
 
     def testAligned5p(self):
         self.GenericTest('5p', self.FORWARD, self.ALIGNED_5P)
