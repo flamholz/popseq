@@ -10,7 +10,7 @@ class TranspositionParams(object):
     
     def __init__(self, insert_seq, backbone_seq, backbone_start_offset,
                  fixed_seq_5p, fixed_seq_3p, linker_pattern,
-                 max_linker_repeats, tn_bp_duplicated):
+                 max_linker_repeats, extra_bp_5p, tn_bp_duplicated):
         """Initialize.
         
         Args:
@@ -27,6 +27,8 @@ class TranspositionParams(object):
             linker_pattern: AmbiguousSequence object defining the pattern.
             max_linker_repeats: the maximum number of repeats of the
                 linker pattern.
+            extra_bp_5p: the extra basepairs added to the 3' end of the 5'
+                fixed sequence to keep things in frame.
             tn_bp_duplicated: the number of bases duplicated during
                 transposition.
         """
@@ -42,6 +44,8 @@ class TranspositionParams(object):
         self.fixed_seq_3p = fixed_seq_3p
         self.linker_pattern = linker_pattern
         self.max_linker_repeats = max_linker_repeats
+        self.extra_bp_5p = extra_bp_5p
+        self.n_extra_bp_5p = len(extra_bp_5p)
         self.tn_bp_duplicated = tn_bp_duplicated
         
         self.fixed_seq_by_end = {('3p', 1): self.fixed_seq_3p,
@@ -78,6 +82,32 @@ class TranspositionParams(object):
         return SeqIO.parse(fname, 'fasta').next().seq
     
     @classmethod
+    def AddArgs(cls, parser):
+        """Add transposition specific arguments to the parser."""
+        parser.add_argument("--insert_seq_filename", required=True,
+                            help=("Path to FASTA file containing insert sequence"))
+        parser.add_argument("--backbone_db_filename", required=True,
+                            help=("Path to FASTA file containing backbone sequence. "
+                                  "Will bin reads by where they align to this sequence."))
+        parser.add_argument("--start_offset", required=True, type=int,
+                            help=("Offset of the start codon into the sequence used "
+                                  "to match the backbone (nt units)"))
+        parser.add_argument("--extra_bp_5p", default='T',
+                            help="Extra bp added to 3' end of 5' linker to keep insert in frame.")
+        parser.add_argument("--tn_bp_duplicated", required=True, type=int,
+                            help="Number of bases duplicated by transposition (nt units)")
+        parser.add_argument("--linker_pattern", required=True,
+                            help="A pattern of (ambiguous) DNA bases describing the linker.")
+        parser.add_argument("--max_linker_repeats", required=True, type=int,
+                            help="Maximum number of repeats of linker pattern.")
+        parser.add_argument("--fixed_5p",
+                            default="TGCATC",
+                            help="Fixed sequence found on 5' end of insert.")
+        parser.add_argument("--fixed_3p",
+                            default="GCGTCA",
+                            help="Fixed sequence found on 3' end of insert.")
+    
+    @classmethod
     def FromArgs(cls, args):
         """Parse from commandline arguments in a standard form."""
         insert_seq = cls.LoadFASTA(args.insert_seq_filename)
@@ -86,6 +116,7 @@ class TranspositionParams(object):
         return TranspositionParams(insert_seq, bbone_seq, args.start_offset,
                                    Seq(args.fixed_5p), Seq(args.fixed_3p),
                                    linker_pattern, args.max_linker_repeats,
+                                   Seq(args.extra_bp_5p),
                                    args.tn_bp_duplicated)
     
     def __str__(self):
