@@ -9,7 +9,7 @@ import sequtils.read_alignment_data.factory as rad_factory
 
 from Bio.Seq import Seq
 from os import path
-from scripts.util.filename_util import MakeFname
+from scripts.util.filename_util import MakeFname, ForceExpand
 from scripts.util import command_util
 from sequtils.transposition_params import TranspositionParams
 
@@ -167,7 +167,7 @@ def Main():
 
     insert_db_fname = args.insert_db_filename
     bbone_db_fname = args.backbone_db_filename
-    read_fnames = args.read_filenames
+    read_fnames = ForceExpand(args.read_filenames)
 
     print '##### Retaining reads that match insert #####'
     insert_filtered_fnames = [MakeFname(i, 'fq', dest_dir=args.tmp_dir,
