@@ -37,14 +37,13 @@ class ReadAlignmentDataFactory(object):
             read_record=read_record)
 
     def DictFromFiles(self,
-                      masked_reads_fname,
+                      filtered_reads_fname,
                       aligned_reads_fname):
         """Makes a dictionary of initialized ReadAlignmentData.
         
         Args:
-            insert_alignment_fname: the path to the BLAT output for the insert.
-            backbone_alignment_fname: the path to the BLAT output for the backbone.
-            reads_fasta_fname: the path to the reads in FASTA format.
+            filtered_reads_fname: path to the filtered (unmasked) reads.
+            aligned_reads_fname: path to BAM file of alignments to backbone.
         
         Returns:
             A dictionary mapping read ID to ReadAlignmentData.
@@ -53,12 +52,13 @@ class ReadAlignmentDataFactory(object):
         """
         read_data_builders = {}
         
-        print masked_reads_fname
-        print aligned_reads_fname
-        masked_reads_reader = SeqIO.parse(masked_reads_fname, 'fastq')
+        print 'Loading data from files'
+        print 'Filtered reads', filtered_reads_fname
+        print 'Backbone aligned reads', aligned_reads_fname
+        masked_reads_reader = SeqIO.parse(filtered_reads_fname, 'fastq')
         for i, record in enumerate(masked_reads_reader):
             if i % 10000 == 0:
-                print 'Processing masked read %d' % i
+                print 'Processing filtered read %d' % i
             
             read_id = record.id
             if read_id in read_data_builders:
@@ -88,12 +88,6 @@ class ReadAlignmentDataFactory(object):
 
         # Generate ReadAlignmentData from builder for every remaining read.
         read_data = dict((k, v.Build()) for k,v in read_data_builders.iteritems())
-
-        """
-        for rad in read_data.values():
-            if rad.insert_start_idx < 0:
-                rad.PrettyPrint()
-        """
         
         return read_data
     
@@ -116,19 +110,35 @@ class ReadAlignmentDataFactory(object):
                                                       aligned_fname))
         return read_data_by_id
     
-    def WriteCSVFile(self, iterable, outfile):
+    @classmethod
+    def MakeDictWriter(cls, outfile):
+        """Returns an initialized DictWriter (headers written).
+        
+        Caller is responsible for closing the file.
+        """
+        w = csv.DictWriter(outfile, rad.ReadAlignmentData.DICT_FIELDNAMES)
+        w.writeheader()
+        return w
+    
+    @classmethod
+    def WriteToDictWriter(cls, dict_writer, iterable):
+        """Writes the iterable to the a pre-made DictWriter."""
+        for rd in iterable:
+            dict_writer.writerow(rd.AsDict())
+    
+    @classmethod
+    def WriteCSVFile(cls, iterable, outfile):
         """Writes ReadAlignmentData to a CSV file.
         
         Args:
             iterable: iterable of ReadAlignmentData objects.
             outfile: file like object.
         """
-        w = csv.DictWriter(outfile, rad.ReadAlignmentData.DICT_FIELDNAMES)
-        w.writeheader()
-        for rd in iterable:
-            w.writerow(rd.AsDict())
-                
-    def WriteCSVFilename(self, iterable, out_fname):
+        w = cls.MakeDictWriter(outfile)
+        cls.WriteToDictWriter(w, iterable)
+
+    @classmethod     
+    def WriteCSVFilename(cls, iterable, out_fname):
         """Writes ReadAlignmentData to a CSV file.
         
         Args:
@@ -136,4 +146,4 @@ class ReadAlignmentDataFactory(object):
             out_fname: filename to write to.
         """
         with open(out_fname, 'w') as outf:
-            self.WriteCSVFile(iterable, outf)
+            cls.WriteCSVFile(iterable, outf)
