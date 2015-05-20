@@ -142,7 +142,6 @@ def SamtoolsIndexMutli(in_fnames):
     out_fnames = map(SamtoolsIndex, in_fnames)
     return out_fnames
 
-
 def Main():
     parser = argparse.ArgumentParser(description='Filter reads.', fromfile_prefix_chars='@')
     parser.add_argument("-i", "--insert_db_filename", required=True,
@@ -252,42 +251,53 @@ def Main():
     aligned_5p_rev_fnames_bam = SamtoolsIndexMutli(aligned_5p_rev_fnames)
     aligned_3p_rev_fnames_bam = SamtoolsIndexMutli(aligned_3p_rev_fnames)
     
-    print '##### Evaluating backbone alignment #####'
+    print '##### Calculating insertions and writing output #####'
     
     # TODO: each of these calls to the factory is reading the same masked reads
     # again. If this is slow, should refactor into a container for the reads.
-    # Otherwise, ignore. 
+    # Otherwise, ignore.
+    print 'Writing output to', args.output_fname
+    out_f = open(args.output_fname, 'w')
+    dict_writer = rad_factory.ReadAlignmentDataFactory.MakeDictWriter(out_f)
+    
+    total_matched_reads = 0 
     forward = 1
     reverse = -1
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '5p', forward)
     read_data_5p = factory.DictFromFileLists(
         insert_bbone_filtered_fnames, aligned_5p_fnames_bam)
+    total_matched_reads += len(read_data_5p)
+    factory.WriteToDictWriter(dict_writer, read_data_5p.itervalues())
+    del read_data_5p  # hint to GC
     
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '3p', forward)
     read_data_3p = factory.DictFromFileLists(
         insert_bbone_filtered_fnames, aligned_3p_fnames_bam)
+    total_matched_reads += len(read_data_3p)
+    factory.WriteToDictWriter(dict_writer, read_data_3p.itervalues())
+    del read_data_3p  # hint to GC
     
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '5p', reverse)
     read_data_5p_rev = factory.DictFromFileLists(
         insert_bbone_filtered_fnames, aligned_5p_rev_fnames_bam)
+    total_matched_reads += len(read_data_5p_rev)
+    factory.WriteToDictWriter(dict_writer, read_data_5p_rev.itervalues())
+    del read_data_5p_rev  # hint to GC
     
     factory = rad_factory.ReadAlignmentDataFactory(
         tn_params, '3p', reverse)
     read_data_3p_rev = factory.DictFromFileLists(
         insert_bbone_filtered_fnames, aligned_3p_rev_fnames_bam)
+    total_matched_reads += len(read_data_3p_rev)
+    factory.WriteToDictWriter(dict_writer, read_data_3p_rev.itervalues())
+    del read_data_3p_rev  # hint to GC
+    out_f.close()
+        
+    print 'Saved', total_matched_reads, 'matching reads'
     
-    out_fname = args.output_fname
-    print 'Writing output to', out_fname
-    all_matched_reads = itertools.chain(read_data_5p.itervalues(),
-                                        read_data_3p.itervalues(),
-                                        read_data_5p_rev.itervalues(),
-                                        read_data_3p_rev.itervalues())
-    factory.WriteCSVFilename(all_matched_reads, out_fname)
-    
-
     duration = time.time() - start_ts
     print 'Running time: %.2f minutes' % (duration/60.0)
     
