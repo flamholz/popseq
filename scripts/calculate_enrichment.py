@@ -4,12 +4,9 @@
 
 import argparse
 import numpy as np
-import os
-import pylab
 import pandas as pd
 import pandas.rpy.common as com
 
-from Bio import SeqIO
 from os import path
 from rpy2 import robjects
 from rpy2.robjects.packages import importr
@@ -21,6 +18,10 @@ def Main():
                         help="Path to CSV summarizing variants in reference sample.")
     parser.add_argument("--data_post_csv", required=True,
                         help="Path to CSV summarizing variants in experimental sample.")
+    parser.add_argument("--pre_condition", required=True,
+                        help="Name of the pre condition.")
+    parser.add_argument("--post_condition", required=True,
+                        help="Name of the post condition")
     parser.add_argument("-o", "--output_fname", required=True,
                         help="Where to write CSV output.")
     args = parser.parse_args()
@@ -31,41 +32,40 @@ def Main():
     assert path.exists(pre_fname), '%s does not exist' % pre_fname
     assert path.exists(post_fname), '%s does not exist' % post_fname
     print 'Reading input data'
-    df_pre = pd.read_csv(pre_fname)
-    df_post = pd.read_csv(post_fname)
+    df_pre = pd.read_csv(pre_fname, index_col=0)
+    df_post = pd.read_csv(post_fname, index_col=0)
 
     # Grab condition names from the filenames.
-    # TODO(flamholz): allow these to supplied via cmdline. 
-    pre_name, _ = path.splitext(path.split(pre_fname)[-1])
-    post_name, _ = path.splitext(path.split(post_fname)[-1])
+    pre_name = args.pre_condition
+    post_name = args.post_condition
 
-    dfs = [df_pre, df_post]
-    df_labels = [pre_name, post_name]
+    # Merge the data frames
+    merged_df = df_pre.reset_index().merge(df_post, how='outer').set_index('insertion_site_name')
+    
+    # Drop the non-relevant data
+    cols_to_drop = ['insertion_site', 'forward_insertion', 'in_frame']
+    merged_df_dropped = merged_df.drop(cols_to_drop, axis=1)
+    merged_df_dropped = merged_df_dropped.fillna(0)
+    merged_df_dropped = merged_df_dropped.astype(int)
+    
+    # Set up the condition labels
+    condition_names = []
+    for colname in merged_df_dropped.columns.tolist():
+        if colname in df_pre.columns.tolist():
+            condition_names.append(pre_name)
+        elif colname in df_post.columns.tolist():
+            condition_names.append(post_name)
+        else:
+            assert False, 'found unrecognized column name!'
 
-    # Stratify on the end matched.
-    print 'Stratifying data based on end matched.'
-    end_dfs = []
-    end_labels = []
-    for end in ['3p', '5p']:
-        for adf, label in zip(dfs, df_labels):
-            end_dfs.append(adf[adf.insert_match_end == end])
-            end_labels.append('%s_matched_%s' % (label, end))
-    
-    min_site = np.min([adf.insertion_site.min() for adf in end_dfs]) - 1
-    max_site = np.max([adf.insertion_site.max() for adf in end_dfs])
-    
-    # Merge stratified count data into 1 dataframe
-    # A column per condition and a row for every insertion site.
-    counts_df = pd.DataFrame()
-    for adf, df_label in zip(end_dfs, end_labels):
-        myhist = np.histogram(adf.insertion_site, bins=np.arange(min_site, max_site))
-        counts, sites = myhist
-        counts_df[df_label] = pd.Series(counts, sites[:-1])
-    counts_df.index.name = 'insertion_site'
+    print 'Column names'
+    print '\t%s' % ', '.join(merged_df_dropped.columns.tolist())
+    print 'Condition names'
+    print '\t%s' % ', '.join(condition_names)
 
     # Make an R dataframe and import R functionality.
     print 'Running DESeq enrichment analysis'
-    r_df = com.convert_to_r_dataframe(counts_df)
+    r_df = com.convert_to_r_dataframe(merged_df_dropped)
     deseq = importr("DESeq")
     estimateSizeFactors = robjects.r["estimateSizeFactors"]
     sizeFactors = robjects.r["sizeFactors"]
@@ -74,7 +74,7 @@ def Main():
     nbinomTest = robjects.r["nbinomTest"]
     plotDispEsts = robjects.r["plotDispEsts"]
 
-    condition = robjects.FactorVector([pre_name, post_name] * 2)
+    condition = robjects.FactorVector(condition_names)
     cds = deseq.newCountDataSet(r_df, condition)
     cds = estimateSizeFactors(cds)
     cds = estimateDispersions(cds)
@@ -83,6 +83,10 @@ def Main():
     # Write output to CSV.
     print 'Writing DESeq results to', args.output_fname
     res_df = com.convert_robj(deseq_res)
+
+    # Put the dropped columns back
+    dropped_df = merged_df[cols_to_drop]
+    res_df = res_df.merge(dropped_df, how='left', left_on='id', right_index=True)
     res_df.to_csv(args.output_fname)
     
     
