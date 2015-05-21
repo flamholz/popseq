@@ -24,6 +24,11 @@ class AmbiguousSeqTest(unittest.TestCase):
         gen = AmbiguousSequence('')
         for n in xrange(20):
             self.assertEquals('', str(gen.Generate(n)))
+            self.assertTrue(gen.IsInstance(''))
+            
+            for i in xrange(1, 11):
+                s = 'A'*i
+                self.assertFalse(gen.IsInstance(s))
 
     def testBasic(self):
         ambiguous_seqs = ['BCT',

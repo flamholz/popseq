@@ -60,6 +60,11 @@ class AmbiguousSequence(object):
             in the defined sequence.
         """
         l_defined = len(defined)
+        l_pattern = len(self.pattern)
+        if l_pattern == 0:
+            # This should be doable more elegantly...
+            return l_defined == 0
+        
         if l_defined % len(self.pattern) != 0:
             # Need an integer multiple of pattern to match.
             return -1
