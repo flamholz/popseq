@@ -1,4 +1,4 @@
->cpEGFP_theoretical_insert_5p cpEGFP_theoretical_insert
-TGCATCTTATAACGTCTTTA
->cpEGFP_theoretical_insert_3p cpEGFP_theoretical_insert
-AATATAACTTCAACGCGTCA
+>cpEGFP_insert_5p cpEGFP_insert
+TATAACGTCTTTATCATGGC
+>cpEGFP_insert_3p cpEGFP_insert
+AGCTTGAATATAACTTCAAC
