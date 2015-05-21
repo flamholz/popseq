@@ -80,7 +80,8 @@ class Fragment(object):
 class Transposition(object):
     """Simulates transposition into a defined backbone."""
     
-    def __init__(self, id_num, insert_gen, target_seq, target_orf_start):
+    def __init__(self, id_num, insert_gen, target_seq, target_orf_start,
+                 insertion_site=None):
         """Init.
         
         Args:
@@ -88,6 +89,7 @@ class Transposition(object):
             insert_gen: generates the insert, potentially with random linkers.
             target_seq: sequence that is being transposed into.
             target_orf_start: start of the ORF in the target sequence.
+            insertion_site: fix the insertion site for testing.
         """
         self.id = id_num
         self.insert_gen = insert_gen
@@ -101,7 +103,7 @@ class Transposition(object):
         insert = self.insert
         target = self.target
         # Insert site relative to start of backbone sequence, not start codon.
-        self.insertion_site = random.randrange(0, len(self.target)-5+1)
+        self.insertion_site = insertion_site or random.randrange(0, len(self.target)-5+1)
         
         # 50% of inserts are reverse
         if random.random() > 0.5:
@@ -113,6 +115,7 @@ class Transposition(object):
         self.construct = target[:ins+5] + insert + target[ins:]
         # Expected insertion site 5' most base of insert sequence relative to start codon.
         self.expected_insertion_site = ins + 5 - (target_orf_start-1)
+        self.in_frame = (self.expected_insertion_site + 1) % 3 == 0
     
     def Shear(self, frag_id, fragment_length=100):
         """Generate a random subsequence of given length.

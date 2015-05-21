@@ -32,7 +32,16 @@ class TranspositionTest(unittest.TestCase):
                 self.assertIsNotNone(record.description)
                 self.assertEquals(record.name, read.id_str)
                 self.assertEquals(record.id, read.id_str)
-            
+    
+    def testFrame(self):
+        # TODO: test this more
+        insert_gen = InsertGenerator(self.INSERT_SEQ, self.FIXED_5P, self.FIXED_3P,
+                                     extra_bp_5p='T')
+        ins = 9 + self.ORF_START - 1
+        tn_gen = Transposition(1023, insert_gen, self.TARGET, self.ORF_START,
+                               insertion_site=ins)
+        self.assertTrue(tn_gen.in_frame)
+        self.assertEquals(14, tn_gen.expected_insertion_site)
 
     def testLinker(self):
         insert_gen = InsertGenerator(self.INSERT_SEQ, self.FIXED_5P, self.FIXED_3P,
