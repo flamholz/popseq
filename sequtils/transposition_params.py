@@ -96,7 +96,7 @@ class TranspositionParams(object):
                             help="Extra bp added to 3' end of 5' linker to keep insert in frame.")
         parser.add_argument("--tn_bp_duplicated", required=True, type=int,
                             help="Number of bases duplicated by transposition (nt units)")
-        parser.add_argument("--linker_pattern", required=True,
+        parser.add_argument("--linker_pattern", default=None,
                             help="A pattern of (ambiguous) DNA bases describing the linker.")
         parser.add_argument("--max_linker_repeats", required=True, type=int,
                             help="Maximum number of repeats of linker pattern.")
@@ -112,7 +112,7 @@ class TranspositionParams(object):
         """Parse from commandline arguments in a standard form."""
         insert_seq = cls.LoadFASTA(args.insert_seq_filename)
         bbone_seq = cls.LoadFASTA(args.backbone_db_filename)
-        linker_pattern = AmbiguousSequence(args.linker_pattern)
+        linker_pattern = AmbiguousSequence(args.linker_pattern or '')
         return TranspositionParams(insert_seq, bbone_seq, args.start_offset,
                                    Seq(args.fixed_5p), Seq(args.fixed_3p),
                                    linker_pattern, args.max_linker_repeats,
