@@ -47,11 +47,29 @@ def Main():
     # A column per condition and a row for every insertion site.
     counts_df = pd.DataFrame()
     for adf, df_label in zip(end_dfs, end_labels):
-        myhist = np.histogram(adf.insertion_site, bins=np.arange(min_site, max_site))
-        counts, sites = myhist
-        counts_df[df_label] = pd.Series(counts, sites[:-1])
-    counts_df.index.name = 'insertion_site'
-    
+        adf_fwd = adf[adf.forward_insertion == True]
+        adf_rev = adf[adf.forward_insertion == False]
+        
+        myhist_fwd = np.histogram(adf_fwd.insertion_site, bins=np.arange(min_site, max_site))
+        myhist_rev = np.histogram(adf_rev.insertion_site, bins=np.arange(min_site, max_site))
+        counts_fwd, sites_fwd = myhist_fwd
+        counts_rev, sites_rev = myhist_rev
+        
+        index_fwd = ['%d_fwd' % i for i in sites_fwd[:-1]]
+        index_rev = ['%d_rev' % i for i in sites_rev[:-1]]
+        
+        series = pd.Series(counts_fwd, index_fwd)
+        series = series.append(pd.Series(counts_rev, index_rev))
+        counts_df[df_label] = series
+        
+    actual_site = np.array([int(ins.split('_')[0]) for ins in counts_df.index])
+    fwd = [(ins.split('_')[1] == 'fwd') for ins in counts_df.index]
+    in_frame = (actual_site + 1) % 3 == 0
+    counts_df['insertion_site'] = actual_site
+    counts_df['forward_insertion'] = fwd
+    counts_df['in_frame'] = in_frame
+    counts_df.index.name = 'insertion_site_name'
+        
     print 'Writing merged counts to', args.output_fname
     counts_df.to_csv(args.output_fname)
     
