@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import argparse
-import itertools
 import os
 import subprocess
 import time

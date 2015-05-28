@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
-"""Analysis of relative enrichment of a variant between samples."""
+"""Merges counts per insertion site.
+
+Ignores any per-site linker variability.
+"""
 
 import argparse
 import numpy as np
@@ -11,7 +14,7 @@ from scripts.util.filename_util import ForceExpand
 
 
 def Main():
-    parser = argparse.ArgumentParser(description='Calculate fold enrichment and P-values.')
+    parser = argparse.ArgumentParser(description='Merges counts per insertion site.')
     parser.add_argument("-i", "--input_filenames", nargs='+', required=True,
                         help="Paths to CSV summarizing variants in reference sample.")
     parser.add_argument("-o", "--output_fname", required=True,

@@ -1,9 +1,13 @@
 #!/usr/bin/python
 
-"""Analysis of relative enrichment of a variant between samples."""
+"""Analysis of enrichment of a variant between samples.
+
+Uses DESeq R package to calculate normalized counts from replicated samples 
+and, from the counts, calculate fold changes (post/pre) and attach P-values
+to the fold change calculation.  
+"""
 
 import argparse
-import numpy as np
 import pandas as pd
 import pandas.rpy.common as com
 
