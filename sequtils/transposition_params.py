@@ -37,6 +37,9 @@ class TranspositionParams(object):
         assert fixed_seq_5p
         assert fixed_seq_3p
         
+        offset_backbone = backbone_seq[backbone_start_offset:]
+        assert offset_backbone.startswith('ATG')
+        
         self.insert_seq = insert_seq
         self.backbone_seq = backbone_seq
         self.backbone_start_offset = backbone_start_offset
