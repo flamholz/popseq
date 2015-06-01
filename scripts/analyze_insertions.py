@@ -166,6 +166,8 @@ def Main():
     insert_db_fname = args.insert_db_filename
     bbone_db_fname = args.backbone_db_filename
     read_fnames = ForceExpand(args.read_filenames)
+    
+    assert len(read_fnames) > 0, 'There better be read files'
 
     print '##### Retaining reads that match insert #####'
     insert_filtered_fnames = [MakeFname(i, 'fq', dest_dir=args.tmp_dir,
