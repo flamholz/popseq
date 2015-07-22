@@ -1,7 +1,7 @@
-popseq
+dipseq
 ======
 
-Code for handling data from library sequencing.
+Code for handling data from domain insertion library sequencing.
 
 # Data Formats
 * Read data is expected in FASTQ format.
