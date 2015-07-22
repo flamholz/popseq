@@ -20,8 +20,8 @@ Code for handling data from domain insertion library sequencing.
 * BBMap toolkit for fast filtering and alignment of reads. 
  * http://sourceforge.net/projects/bbmap/
 * fastq-tools for regex trimming of reads.
- * note: you need to install our custom version of fastq-tools.
- * https://github.com/SavageLab/fastq-tools
+ * You may need to install from source for most recent version.
+ * https://github.com/dcjones/fastq-tools
 * R, DESeq
  * http://bioconductor.org/packages/release/bioc/html/DESeq.html
 
