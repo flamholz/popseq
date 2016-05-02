@@ -36,7 +36,7 @@ Code for handling data from domain insertion library sequencing.
  * Unzip and move the unzipped folder somewhere permanent (e.g. make a ~/bin directory)
  * Add the BBMap folder to your PATH.
  * Test by running bbduk.sh from another folder.
-2. Install the Savage Lab version of fastq-tools.
+2. Install the latest version of fastq-tools.
  * Clone the project into your local workspace (link above).  
  * Run `./autogen.sh` from inside the fastq-tools directory to generate the the makefile.
  * Run `./configure.sh && sudo make install` to configure, build and install the tools.
