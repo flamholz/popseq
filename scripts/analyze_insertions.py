@@ -1,17 +1,17 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import argparse
 import os
 import subprocess
 import time
 import sequtils.read_alignment_data.factory as rad_factory
+import logging
 
 from Bio.Seq import Seq
 from os import path
 from scripts.util.filename_util import MakeFname, ForceExpand
 from scripts.util import command_util
 from sequtils.transposition_params import TranspositionParams
-
 
 def ReadID(read_info):
     construct_num = read_info["cn"]
@@ -125,7 +125,7 @@ def SamtoolsIndex(in_fname):
     # Make a sorted BAM file.
     command = ['samtools view -bS %s' % in_fname,
                '|'
-               'samtools sort - %s' % fname]
+               'samtools sort -o %s' % bam_fname]
     ret = os.system(' '.join(command)) # appends .bam
     assert ret == 0, 'samtools failed for %s!' % in_fname
 
@@ -142,6 +142,8 @@ def SamtoolsIndexMutli(in_fnames):
     return out_fnames
 
 def Main():
+    logging.basicConfig(filename='out.log', level=logging.DEBUG)
+
     parser = argparse.ArgumentParser(description='Filter reads.', fromfile_prefix_chars='@')
     parser.add_argument("-i", "--insert_db_filename", required=True,
                         help=("Path to FASTA file containing insert ends to align reads to. "
@@ -200,29 +202,33 @@ def Main():
     pattern_3p = 'ZZZZZ[ATCG]{0,11}%s' % args.fixed_3p
     pattern_5p_rev = 'ZZZZZ[ATCG]{0,11}%s' % fixed_5p.reverse_complement()
     pattern_3p_rev = '%s[ATCG]{0,11}ZZZZZ' % fixed_3p.reverse_complement()
-    
+   
     trimmed_5p_fnames = [MakeFname(i, 'fq', dest_dir=args.tmp_dir,
                                    postfix='filtered_trimmed_5p')
                          for i in read_fnames]
-    GrepTrimMulti(pattern_5p, filtered_masked_fnames, trimmed_5p_fnames,
+
+    GrepTrimMulti('"{}"'.format(pattern_5p), filtered_masked_fnames, trimmed_5p_fnames,
                   trim_after=True, trim_match=True)
-    
+   
     trimmed_3p_fnames = [MakeFname(i, 'fq', dest_dir=args.tmp_dir,
                                    postfix='filtered_trimmed_3p')
                          for i in read_fnames]
-    GrepTrimMulti(pattern_3p, filtered_masked_fnames, trimmed_3p_fnames,
+
+    GrepTrimMulti('"{}"'.format(pattern_3p), filtered_masked_fnames, trimmed_3p_fnames,
                   trim_before=True, trim_match=True)
     
     trimmed_5p_rev_fnames = [MakeFname(i, 'fq', dest_dir=args.tmp_dir,
                                        postfix='filtered_trimmed_5p_rev')
                              for i in read_fnames]
-    GrepTrimMulti(pattern_5p_rev, filtered_masked_fnames, trimmed_5p_rev_fnames,
+
+    GrepTrimMulti('"{}"'.format(pattern_5p_rev), filtered_masked_fnames, trimmed_5p_rev_fnames,
                   trim_before=True, trim_match=True)
     
     trimmed_3p_rev_fnames = [MakeFname(i, 'fq', dest_dir=args.tmp_dir,
                                        postfix='filtered_trimmed_3p_rev')
                              for i in read_fnames]
-    GrepTrimMulti(pattern_3p_rev, filtered_masked_fnames, trimmed_3p_rev_fnames,
+
+    GrepTrimMulti('"{}"'.format(pattern_3p_rev), filtered_masked_fnames, trimmed_3p_rev_fnames,
                   trim_after=True, trim_match=True)
 
     print '##### Aligning to backbone #####'
@@ -247,6 +253,7 @@ def Main():
     BBMapAlignMulti(bbone_db_fname, trimmed_3p_rev_fnames, aligned_3p_rev_fnames)
     
     print '##### Indexing alignment output #####'
+    logging.debug('This is aligned_5p_fnames: {}'.format(aligned_5p_fnames))
     aligned_5p_fnames_bam = SamtoolsIndexMutli(aligned_5p_fnames)
     aligned_3p_fnames_bam = SamtoolsIndexMutli(aligned_3p_fnames)
     aligned_5p_rev_fnames_bam = SamtoolsIndexMutli(aligned_5p_rev_fnames)
