@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
-"""Filters reads.
+"""Aligns reads to insert and backbone, finds matches.
 
-Aligns reads to reference sequences (e.g. insert) and then produces a FASTA file
-with only those reads that match.
+One step script -- calls BLAT to perform alignment. Collects data from BLAT
+to find those reads which match both insert and backbone. Uses match
+statistics to calculate the position of the match and various other
+data about it. Data is output to a CSV file which can be analyzed further.
 
 Requirements:
 1) FASTX toolkit installed (for fastq_to_fasta).
@@ -16,20 +18,20 @@ Requirements:
 """
 
 import argparse
-import csv
 import os
 import time
 import numpy as np
+import sequtils.read_alignment_data as rad
 
 from os import path
 from scripts.util import filename_util
 from scripts.util import command_util
 from scripts.util.fasta_stuff import ConvertFASTQToFASTA, AlignReadsToDB
-from sequtils.read_alignment_data import ReadAlignmentData
+from sequtils.read_alignment_data import factory
 
 
 def Main():
-    parser = argparse.ArgumentParser(description='Filter reads.')
+    parser = argparse.ArgumentParser(description='Filter reads.', fromfile_prefix_chars='@')
     parser.add_argument("-i", "--insert_db_filename", required=True,
                         help=("Path to FASTA file containing insert ends to align reads to. "
                               "Will only retain reads that align well to this DB."))
@@ -38,19 +40,28 @@ def Main():
                               "Will bin reads by where they align to this sequence."))
     parser.add_argument("-r", "--read_filenames", nargs='+', required=True,
                         help="Path to FASTQ files containing reads.")
+    parser.add_argument("--start_offset", required=True, type=int,
+                        help=("Offset of the start codon into the sequence used "
+                              "to match the backbone (nt units)"))
     parser.add_argument("-t", "--tmp_dir",
                         default="_read_filter_data",
                         help="Path to use to store intermediate files.")
     parser.add_argument("--fastq_ignore_degenerate", default=False, action='store_true',
                         help="If set, ignore reads with degenerate bases (N).")
-    parser.add_argument("--blat_tile_size", type=int, default=6,
+    parser.add_argument("--blat_tile_size", type=int, default=8,
                         help="Tile size to use for BLAT search.")
     parser.add_argument("--blat_step_size", type=int, default=2,
                         help="Step size to use for BLAT search.")
     parser.add_argument("--blat_min_score", type=int, default=15,
                         help="Minimum score to retain a BLAT match.")
+    parser.add_argument("--blat_min_match", type=int, default=2,
+                        help="Minimum number of BLAT tiles to trigger matching.")
     parser.add_argument("--blat_max_gap", type=int, default=0,
                         help="Blat maximum number of gaps between tiles.")
+    parser.add_argument("--blat_one_off", type=int, default=0,
+                        help="Allow one mismatch in BLAT tile to trigger matching.")
+    parser.add_argument("--blat_rep_match", type=int, default=1000000,
+                        help="Number of tile repetitions before marked overused.")
     parser.add_argument("--blat_output_type", default="pslx",
                         help="Blat output format")
     parser.add_argument("-o", "--summary_output_csv_filename",
@@ -59,11 +70,23 @@ def Main():
     parser.add_argument("-s", "--summary_output", dest='summary_output', action='store_true')
     parser.set_defaults(summary_output=True)
     args = parser.parse_args()
+    
+    """
+    NOTE: BLAT documents guarantee finding of exact matches of length
+        2*step_size + tile_size - 1
+    With the default parameters above, this will give us all exact matches
+    of 11 nt or longer.
+    
+    See documentation here:
+        http://genome.ucsc.edu/FAQ/FAQblat.html#blat8 
+    """
 
     # Check that everything we need exists.
     command_util.CheckAllInstalled(['fastq_to_fasta', 'blat'])
 
     # Get the filenames we are supposed to process.
+    # TODO(flamholz): refactor this code so it's calling out to well-named functions.
+    print 'Input read filenames', args.read_filenames
     read_filenames = filename_util.ForceExpand(args.read_filenames)
     print 'Read filenames', read_filenames
     read_filenames = filter(lambda n: path.splitext(n)[1] in ['.fq', '.fastq', '.fa', '.fasta'],
@@ -104,6 +127,9 @@ def Main():
         blat_tile_size=args.blat_tile_size,
         blat_step_size=args.blat_step_size,
         blat_min_score=args.blat_min_score,
+        blat_min_match=args.blat_min_match,
+        blat_one_off=args.blat_one_off,
+        blat_rep_match=args.blat_rep_match,
         blat_max_gap=args.blat_max_gap,
         output_type='pslx')
     align_duration = time.time() - start_align_ts
@@ -118,6 +144,9 @@ def Main():
         blat_tile_size=args.blat_tile_size,
         blat_step_size=args.blat_step_size,
         blat_min_score=args.blat_min_score,
+        blat_min_match=args.blat_min_match,
+        blat_one_off=args.blat_one_off,
+        blat_rep_match=args.blat_rep_match,
         blat_max_gap=args.blat_max_gap,
         output_type='pslx')
     align_duration = time.time() - start_align_ts
@@ -152,18 +181,12 @@ def Main():
     
     # Gather all the reads information by read ID.
     start_ts = time.time()
-    read_data_by_id = {}
-    for insert_fname, backbone_fname, fasta_fname in zip(insert_aligned_fnames,
-                                                         backbone_aligned_fnames,
-                                                         fasta_fnames):
-        print 'Analyzing file set'
-        print insert_fname
-        print backbone_fname
-        print fasta_fname
-        read_data_by_id.update(ReadAlignmentData.DictFromFiles(insert_fname,
-                                                               backbone_fname,
-                                                               fasta_fname))
-    
+    rad_factory = factory.ReadAlignmentDataFactory(backbone_start_offset=args.start_offset,
+                                                   fixed_5p_seq=rad.DEFAULT_FIXED_5P_SEQ,
+                                                   fixed_3p_seq=rad.DEFAULT_FIXED_3P_SEQ)
+    read_data_by_id = rad_factory.DictFromFileLists(insert_aligned_fnames,
+                                                    backbone_aligned_fnames,
+                                                    fasta_fnames)
     insertions = [r.has_insertion for r in read_data_by_id.itervalues()]
     fwd_insertions = [r.has_forward_insertion for r in read_data_by_id.itervalues()]
     
@@ -181,13 +204,7 @@ def Main():
     start_ts = time.time()
     out_fname = args.summary_output_csv_filename
     print 'Writing insertion matches to', out_fname
-    with open(out_fname, 'w') as f:
-        w = csv.DictWriter(f, ReadAlignmentData.DICT_FIELDNAMES)
-        w.writeheader()
-        for rd in read_data_by_id.itervalues():
-            # Requires both matches they may not be forward or consistent.
-            if rd.has_insert_backbone_matches:
-                w.writerow(rd.AsDict())
+    rad_factory.WriteCSV(read_data_by_id.itervalues(), out_fname)
     total_duration = time.time() - start_ts
     print 'Done writing read statistics, took %.2f minutes' % (total_duration / 60.0)
 

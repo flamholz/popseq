@@ -1,9 +1,0 @@
-psLayout version 3
-
-match	mis- 	rep. 	N's	Q gap	Q gap	T gap	T gap	strand	Q        	Q   	Q    	Q  	T        	T   	T    	T  	block	blockSizes 	qStarts	 tStarts
-     	match	match	   	count	bases	count	bases	      	name     	size	start	end	name     	size	start	end	count
----------------------------------------------------------------------------------------------------------------------------------------------------------------
-20	0	0	0	0	0	0	0	+	read_28	100	55	75	pdz_insert_5p	20	0	20	1	20,	55,	0,	caacgtcggcgtgtgacggt,	caacgtcggcgtgtgacggt,
-20	0	0	0	0	0	0	0	-	read_29	100	33	53	pdz_insert_5p	20	0	20	1	20,	47,	0,	caacgtcggcgtgtgacggt,	caacgtcggcgtgtgacggt,
-20	0	0	0	0	0	0	0	+	read_30	100	22	42	pdz_insert_3p	20	0	20	1	20,	22,	0,	tgctcgaagttaagtacatg,	tgctcgaagttaagtacatg,
-20	0	0	0	0	0	0	0	-	read_31	100	59	79	pdz_insert_3p	20	0	20	1	20,	21,	0,	tgctcgaagttaagtacatg,	tgctcgaagttaagtacatg,
